@@ -7,6 +7,31 @@
   "flags": [],
   "input_type": "code",
   "project_content_sha256": "a3f9e2c1d4b8f7e0a1b2c3d4e5f60718a3f9e2c1d4b8f7e0a1b2c3d4e5f60718",
+  "detector_confidence": {
+    "classified_type": "code",
+    "confidence": "high",
+    "primary_score": 0.92,
+    "runner_up_type": "ambiguous-text",
+    "runner_up_score": 0.18,
+    "fingerprints_observed": ["git_tracked", "build_manifest", "test_command", "source_tree"],
+    "multi_type": false,
+    "secondary_types": [],
+    "ambiguous_reason": null
+  },
+  "section_selector_confidence": {
+    "input_type": "code",
+    "dimensions": {
+      "CORRECTNESS": {"decision": "ACTIVATE", "reason": "floor dimension"},
+      "MAINTAINABILITY": {"decision": "ACTIVATE", "reason": "floor dimension"},
+      "ARCHITECTURE": {"decision": "SUPPRESS", "reason": "single-package project"},
+      "PERFORMANCE": {"decision": "SUPPRESS", "reason": "small project, no hot-path signals"},
+      "SECURITY": {"decision": "SUPPRESS", "reason": "no network/IO/DB/auth surfaces"}
+    },
+    "finding_class_suppressions": [
+      {"class": "missing-error-handling", "reason": "code input type — class active for code"}
+    ],
+    "multi_type_union": {}
+  },
   "language_summary": {"python": 12},
   "build_manifest": "pyproject.toml",
   "test_command": "pytest",
@@ -54,6 +79,11 @@
       "underlying_cause": "Off-by-one error in loop bound — range(len(tokens) - 1) instead of range(len(tokens)).",
       "prognosis": "Downstream consumers expecting N tokens silently receive N-1 tokens, causing incomplete results with no error signal.",
       "confidence_interval": [0.90, 0.99],
+      "falsifiability": {
+        "status": "survived",
+        "counter_argument": "The loop bound could be intentional if the last token is a sentinel that should be dropped.",
+        "survival_rationale": "No sentinel pattern exists; all tokens are homogeneous data. The -1 is not documented or tested."
+      },
       "provenance": {
         "node": "N04",
         "mode": "inline",

@@ -1,0 +1,19 @@
+# Frozen expected-finding set for spec-doc-small determinism fixture.
+# Run: python tests/determinism/check_overlap.py <actual-report-path> --fixture spec-doc-small
+fixture_version: 1
+source_dir: tests/determinism/spec-doc-small/source/
+
+expected_findings:
+  - id_pattern: "F0*"
+    location: "source/preset-system-spec.md:7"
+    dimension: CORRECTNESS
+    severity: MEDIUM
+    defect_class: missing-acceptance-criteria
+    notes: "REQ-002 Preset Saving has no acceptance criteria; AC-001 and AC-002 cover load/compat but not save"
+
+  - id_pattern: "F0*"
+    location: "source/preset-system-spec.md:22"
+    dimension: CORRECTNESS
+    severity: LOW
+    defect_class: ambiguous-requirement
+    notes: "AC-002 'load identically' is not quantified; parameter tolerance not specified"

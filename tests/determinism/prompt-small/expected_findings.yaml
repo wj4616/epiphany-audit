@@ -1,0 +1,19 @@
+# Frozen expected-finding set for prompt-small determinism fixture.
+# Run: python tests/determinism/check_overlap.py <actual-report-path> --fixture prompt-small
+fixture_version: 1
+source_dir: tests/determinism/prompt-small/source/
+
+expected_findings:
+  - id_pattern: "F0*"
+    location: "source/code-review-prompt.md:1"
+    dimension: CORRECTNESS
+    severity: LOW
+    defect_class: delimiter-inconsistency
+    notes: "Uses <system>/<user>/<output_format>/<verification> tags with no closing counterparts; XML-style tags not balanced"
+
+  - id_pattern: "F0*"
+    location: "source/code-review-prompt.md:21"
+    dimension: CORRECTNESS
+    severity: MEDIUM
+    defect_class: missing-output-schema
+    notes: "<output_format> describes JSON shape but does not provide a concrete JSON Schema — model may drift on field types"

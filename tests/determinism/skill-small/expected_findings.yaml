@@ -1,0 +1,19 @@
+# Frozen expected-finding set for skill-small determinism fixture.
+# Run: python tests/determinism/check_overlap.py <actual-report-path> --fixture skill-small
+fixture_version: 1
+source_dir: tests/determinism/skill-small/source/
+
+expected_findings:
+  - id_pattern: "F0*"
+    location: "source/SKILL.md:1"
+    dimension: MAINTAINABILITY
+    severity: MEDIUM
+    defect_class: missing-halt-states
+    notes: "SKILL.md has no halt states section; v1.x skills require at minimum halt-on-usage-error"
+
+  - id_pattern: "F0*"
+    location: "source/modules/N01-context-intake.md:1"
+    dimension: CORRECTNESS
+    severity: HIGH
+    defect_class: missing-required-sections
+    notes: "Module N01 missing Side Effects, Halt Conditions, Token Budget, Backtrack, Fan-out, and Back-edge Endpoints sections"

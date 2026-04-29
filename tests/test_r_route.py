@@ -114,3 +114,144 @@ def test_all_floor_dimensions_have_file_present_trigger():
         assert "file_present" in types, (
             f"{dim}: floor dimension must have a file_present activation trigger"
         )
+
+
+# --- v2.x Per-Type Activation Matrix Tests ---
+
+# Section-activation matrix: for each input type, some dimensions are ACTIVATE,
+# SUPPRESS, or CONDITIONAL (see SKILL.md §10).
+# These tests validate the matrix rules as unit-testable invariants.
+
+SECTION_ACTIVATION = {
+    "code": {
+        "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
+        "ARCHITECTURE": "CONDITIONAL", "PERFORMANCE": "CONDITIONAL",
+        "SECURITY": "CONDITIONAL",
+    },
+    "specification-document": {
+        "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
+        "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
+        "SECURITY": "SUPPRESS",
+    },
+    "plan-document": {
+        "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
+        "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
+        "SECURITY": "SUPPRESS",
+    },
+    "skill": {
+        "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
+        "ARCHITECTURE": "CONDITIONAL", "PERFORMANCE": "CONDITIONAL",
+        "SECURITY": "CONDITIONAL",
+    },
+    "prompt": {
+        "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
+        "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
+        "SECURITY": "CONDITIONAL",
+    },
+    "ambiguous-text": {
+        "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
+        "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
+        "SECURITY": "SUPPRESS",
+    },
+}
+
+FINDING_CLASS_SUPPRESSIONS = {
+    "specification-document": [
+        "missing-error-handling", "race-condition", "resource-leak",
+        "null-dereference", "type-error", "off-by-one",
+    ],
+    "plan-document": [
+        "missing-error-handling", "race-condition", "resource-leak",
+        "null-dereference", "type-error", "off-by-one",
+    ],
+    "prompt": [
+        "missing-error-handling", "race-condition", "resource-leak",
+        "null-dereference",
+    ],
+    "ambiguous-text": [
+        "missing-error-handling", "race-condition", "resource-leak",
+        "null-dereference", "type-error", "off-by-one",
+        "architectural-smell", "performance-regression",
+    ],
+}
+
+
+def test_floor_dimensions_activate_for_all_types():
+    """CORRECTNESS and MAINTAINABILITY must be ACTIVATE for every input type."""
+    for input_type, dims in SECTION_ACTIVATION.items():
+        for floor_dim in FLOOR_DIMENSIONS:
+            key = floor_dim.upper()
+            assert dims.get(key) == "ACTIVATE", (
+                f"{key} must be ACTIVATE for {input_type}, got {dims.get(key)}"
+            )
+
+
+def test_code_type_allows_all_dimensions():
+    """Code input type has CONDITIONAL for non-floor dims (never SUPPRESS)."""
+    code_dims = SECTION_ACTIVATION["code"]
+    for dim, decision in code_dims.items():
+        assert decision in ("ACTIVATE", "CONDITIONAL"), (
+            f"code: {dim} must be ACTIVATE or CONDITIONAL, got {decision}"
+        )
+
+
+def test_spec_doc_suppresses_non_text_dims():
+    """Spec docs suppress ARCHITECTURE, PERFORMANCE, SECURITY."""
+    spec = SECTION_ACTIVATION["specification-document"]
+    for dim in ("ARCHITECTURE", "PERFORMANCE", "SECURITY"):
+        assert spec[dim] == "SUPPRESS", (
+            f"specification-document: {dim} must be SUPPRESS, got {spec[dim]}"
+        )
+
+
+def test_plan_doc_suppresses_non_text_dims():
+    """Plan docs suppress ARCHITECTURE, PERFORMANCE, SECURITY."""
+    plan = SECTION_ACTIVATION["plan-document"]
+    for dim in ("ARCHITECTURE", "PERFORMANCE", "SECURITY"):
+        assert plan[dim] == "SUPPRESS", (
+            f"plan-document: {dim} must be SUPPRESS, got {plan[dim]}"
+        )
+
+
+def test_ambiguous_text_suppresses_all_non_floor():
+    """Ambiguous text suppresses all non-floor dimensions."""
+    amb = SECTION_ACTIVATION["ambiguous-text"]
+    for dim in ("ARCHITECTURE", "PERFORMANCE", "SECURITY"):
+        assert amb[dim] == "SUPPRESS", (
+            f"ambiguous-text: {dim} must be SUPPRESS, got {amb[dim]}"
+        )
+
+
+def test_spec_doc_suppresses_code_finding_classes():
+    """Spec docs suppress code-specific finding classes."""
+    suppressed = FINDING_CLASS_SUPPRESSIONS["specification-document"]
+    assert "off-by-one" in suppressed
+    assert "race-condition" in suppressed
+
+
+def test_plan_doc_suppresses_code_finding_classes():
+    """Plan docs suppress code-specific finding classes."""
+    suppressed = FINDING_CLASS_SUPPRESSIONS["plan-document"]
+    assert "null-dereference" in suppressed
+    assert "type-error" in suppressed
+
+
+def test_prompt_does_not_suppress_type_error():
+    """Prompts suppress fewer classes than spec/plan; type-error may be relevant."""
+    prompt_suppressed = FINDING_CLASS_SUPPRESSIONS["prompt"]
+    assert "off-by-one" not in prompt_suppressed
+
+
+def test_ambiguous_text_suppresses_most_classes():
+    """Ambiguous text has the broadest suppression set."""
+    amb_suppressed = FINDING_CLASS_SUPPRESSIONS["ambiguous-text"]
+    assert len(amb_suppressed) >= 7
+
+
+def test_all_types_have_floor_coverage():
+    """Every input type defines activation for all five built-in dimensions."""
+    all_dims = {"CORRECTNESS", "MAINTAINABILITY", "ARCHITECTURE", "PERFORMANCE", "SECURITY"}
+    for input_type, dims in SECTION_ACTIVATION.items():
+        covered = set(dims.keys())
+        missing = all_dims - covered
+        assert not missing, f"{input_type}: missing dimension entries for {missing}"

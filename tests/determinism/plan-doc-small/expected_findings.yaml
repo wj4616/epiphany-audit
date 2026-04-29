@@ -1,0 +1,19 @@
+# Frozen expected-finding set for plan-doc-small determinism fixture.
+# Run: python tests/determinism/check_overlap.py <actual-report-path> --fixture plan-doc-small
+fixture_version: 1
+source_dir: tests/determinism/plan-doc-small/source/
+
+expected_findings:
+  - id_pattern: "F0*"
+    location: "source/dashboard-build-plan.md:9"
+    dimension: CORRECTNESS
+    severity: MEDIUM
+    defect_class: missing-checkpoint
+    notes: "Phase B has no test command or verifiable exit condition beyond Lighthouse; missing automated check"
+
+  - id_pattern: "F0*"
+    location: "source/dashboard-build-plan.md:14"
+    dimension: CORRECTNESS
+    severity: LOW
+    defect_class: ambiguous-dependency
+    notes: "Phase C 'WebSocket connection' depends on backend WS endpoint but Phase A does not mention it"

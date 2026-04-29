@@ -14,6 +14,16 @@ def pytest_collection_modifyitems(items):
     pass
 
 
+EXPECTED_NODE_COUNT = 29
+
+
+def test_node_count():
+    """v2.0.0: 29 modules (27 v1.x + N00a + N00b)."""
+    assert len(MODULE_FILES) == EXPECTED_NODE_COUNT, (
+        f"expected {EXPECTED_NODE_COUNT} module files, found {len(MODULE_FILES)}"
+    )
+
+
 @pytest.mark.parametrize("path", MODULE_FILES)
 def test_module_has_required_sections(path):
     content = open(path).read()
