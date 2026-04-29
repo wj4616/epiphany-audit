@@ -26,3 +26,29 @@ halt states, and behavioral specification.
 - State files:   `~/docs/epiphany/audit/.state/`
 - Recovery:      `~/docs/epiphany/audit/.recovery/`
 - Logs:          `~/docs/epiphany/audit/.logs/`
+
+## Development
+
+**Install test dependencies:**
+
+~~~bash
+pip install -r tests/requirements.txt
+~~~
+
+**Run tests:**
+
+~~~bash
+pytest -q
+~~~
+
+**Run determinism harness manually:**
+
+~~~bash
+python tests/determinism/check_overlap.py <audit-report.md> [--fixture python-small]
+~~~
+
+**Install pre-commit hooks (optional):**
+
+~~~bash
+pip install pre-commit && pre-commit install
+~~~

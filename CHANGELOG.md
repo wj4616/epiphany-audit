@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.1] — 2026-04-29
+
+### Fixed
+- `check_overlap.py`: dimension parsing now strips quotes (bare YAML / JSON / Python repr)
+- `check_overlap.py`: location prefix now strips `source/` before matching
+- `check_overlap.py`: SKILL path uses `__file__`-relative resolution, not `os.path.expanduser`
+- `tests/conftest.py`: removed unused SKILL constant
+- `check_module_structure.py`: SKILL path uses `__file__`-relative resolution
+- `check_module_structure.py`: regex now uses `re.MULTILINE` for correct section matching
+- `test_improvement_report_schema.py`: renamed duplicate test function
+- `test_harness_parse.py`: removed unreachable `__wrapped__` branch and unused `types` import
+- `test_harness_parse.py`: removed dead `sys.path.insert`, `import tempfile`, and `_write_tmp`
+
+### Added
+- `tests/test_harness_parse.py`: guards determinism harness format assumptions (F006 coupling)
+
 ## [1.0.0] — 2026-04-27
 
 ### Added
