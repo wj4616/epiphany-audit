@@ -1,0 +1,14 @@
+# Frozen expected-finding set for markdown-small determinism fixture.
+# Exercises the harness on a markdown-processing Python project with a
+# non-Python path prefix, validating location matching for this layout.
+# Run: python tests/determinism/check_overlap.py <actual-report-path> --fixture markdown-small
+fixture_version: 1
+source_dir: tests/determinism/markdown-small/source/
+
+expected_findings:
+  - id_pattern: "F0*"
+    location: "source/extract_headings.py:12"
+    dimension: CORRECTNESS
+    severity: HIGH
+    defect_class: off-by-one
+    notes: "i < len(lines) should be i + 1 < len(lines); IndexError when last line is a heading"
