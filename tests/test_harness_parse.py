@@ -5,11 +5,8 @@ rendered in formats the template actually produces.
 Prevents silent breakage when the template field order changes relative to
 the harness regex (F006 — template-harness coupling).
 """
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                "tests", "determinism"))
+import os
 import re
-import tempfile
 import pytest
 
 
@@ -24,13 +21,6 @@ def _parse_actual_report_from_string(content: str):
         dims = [d.strip().strip("'\"") for d in block.group(2).split(",")]
         locations.append((loc, dims))
     return locations
-
-
-def _write_tmp(content: str):
-    f = tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False)
-    f.write(content)
-    f.close()
-    return f.name
 
 
 # --- bare YAML (no quotes) -------------------------------------------------
