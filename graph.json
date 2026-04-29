@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "nodes": [
     {
       "id": "N01",
@@ -8,7 +8,7 @@
       "mode": "inline",
       "active_in": "audit",
       "inputs": ["cli_args", "cwd", "env"],
-      "outputs": ["project_model", "resolved_flags"],
+      "outputs": ["project_model", "resolved_flags", "input_type"],
       "aggregation_policy": "n/a",
       "halt_conditions": [
         "halt-pre-audit", "halt-suspicious-target",
@@ -17,12 +17,34 @@
       ]
     },
     {
+      "id": "N00a",
+      "name": "AuditabilityPrerequisiteGate",
+      "type": "classifier",
+      "mode": "inline",
+      "active_in": "audit",
+      "inputs": ["project_model"],
+      "outputs": ["prerequisite_gate_result"],
+      "aggregation_policy": "n/a",
+      "halt_conditions": ["halt-on-non-auditable-input"]
+    },
+    {
+      "id": "N00b",
+      "name": "InputTypeDetector",
+      "type": "classifier",
+      "mode": "inline",
+      "active_in": "audit",
+      "inputs": ["project_model"],
+      "outputs": ["detector_result", "input_type"],
+      "aggregation_policy": "n/a",
+      "halt_conditions": []
+    },
+    {
       "id": "N02",
       "name": "RelevanceRouter",
       "type": "router",
       "mode": "inline",
       "active_in": "audit",
-      "inputs": ["project_model", "dimension_plugins_from_disk"],
+      "inputs": ["project_model", "dimension_plugins_from_disk", "input_type"],
       "outputs": ["dimension_activation_map", "plugin_registry"],
       "aggregation_policy": "n/a",
       "halt_conditions": ["halt-on-floor-plugin-missing"]
@@ -147,7 +169,8 @@
       "inputs": ["prioritized_findings", "punch_list", "project_model"],
       "outputs": ["formatted_report_markdown"],
       "aggregation_policy": "n/a",
-      "halt_conditions": []
+      "halt_conditions": [],
+      "notes": "v2.x: emits medical-diagnostic tetrad on every finding; runs falsifiability-first creativity check and multi-trial creativity tournament"
     },
     {
       "id": "N14",
@@ -159,7 +182,8 @@
       "outputs": ["q_gate_result", "validated_report"],
       "aggregation_policy": "adversarial self-review",
       "halt_conditions": ["halt-on-q-gate-failure"],
-      "spawn_policy": "Pass B spawns when: >=5 findings OR any CRITICAL/HIGH severity OR --deep flag"
+      "spawn_policy": "Pass B spawns when: >=5 findings OR any CRITICAL/HIGH severity OR --deep flag",
+      "notes": "v2.x: Pass A check #2 verifies tetrad-completeness on every finding"
     },
     {
       "id": "N15",
@@ -170,7 +194,8 @@
       "inputs": ["validated_report", "project_model"],
       "outputs": ["save_decision", "saved_report_path", "report_id"],
       "aggregation_policy": "n/a",
-      "halt_conditions": []
+      "halt_conditions": [],
+      "notes": "v2.x: emits self-audit traces; resolves slugs per input type; computes and stores project_content_sha256"
     },
     {
       "id": "N16",
@@ -317,6 +342,11 @@
     }
   ],
   "edges": [
+    {"id": "E00a",         "source": "N01", "target": "N00a",             "channel": "data",        "cardinality": "1:1",  "activation": "always; N01 produces project_model → N00a prerequisite gate"},
+    {"id": "E00b",         "source": "N00a", "target": "N00b",            "channel": "data",        "cardinality": "1:1",  "activation": "on PASS; prerequisite gate satisfied → input type detection"},
+    {"id": "E00c",         "source": "N00a", "target": "user",            "channel": "control",     "cardinality": "1:1",  "activation": "on FAIL; non-auditability verdict emitted to user"},
+    {"id": "E00d",         "source": "N00b", "target": "N01",             "channel": "feedback",    "cardinality": "1:1",  "activation": "always; input_type set on N01 project_model via feedback edge"},
+    {"id": "E00e",         "source": "N00b", "target": "N02",             "channel": "data",        "cardinality": "1:1",  "activation": "always (post-E00d); classified input_type → N02 relevance router"},
     {"id": "E01",          "source": "N01", "target": "N02",              "channel": "data",        "cardinality": "1:1",  "activation": "always"},
     {"id": "E02",          "source": "N02", "target": "N03",              "channel": "data",        "cardinality": "1:1",  "activation": "always"},
     {"id": "E03",          "source": "N02", "target": ["N04","N05","N06","N07","N08","N09"], "channel": "control", "cardinality": "1:N",  "activation": "per activation map; floor (CORRECTNESS, MAINTAINABILITY) always emits"},
