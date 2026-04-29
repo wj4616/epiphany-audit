@@ -1,14 +1,28 @@
-# epiphany-audit
+# epiphany-audit v2.0.0
 
-Graph-of-thought audit skill for Claude Code. Runs a multidimensional,
-project-aware audit on any codebase, then optionally drives a safeguarded
-fix pipeline with idempotent recovery.
+Multi-input-type graph-of-thought audit skill for Claude Code. Audits code,
+specification documents, plan documents, AI agent skills, and detailed prompts,
+then optionally drives a safeguarded fix pipeline with idempotent recovery.
+
+## Supported Input Types
+
+| Type | Description |
+|------|-------------|
+| Code | Git-tracked projects (C++, Python, JS, etc.) |
+| Specification document | Design specs with requirements/acceptance criteria |
+| Plan document | Implementation plans with phases/checkpoints/dependencies |
+| Skill | Claude Code AI agent skill directories |
+| Prompt | Detailed prompts with XML tag structure |
+| Ambiguous text | Fallback — universal dimensions only |
+
+Input type is auto-detected via structural fingerprinting at audit time.
 
 ## Invocation
 
 ~~~
-/epiphany-audit [<path>] [--audit | --fix <report>] [--verbose] [--deep]
-                [--improve] [--auto | --confirm-all | --dry-run]
+/epiphany-audit [<path>] [--audit | --fix [<report>] | --improve]
+                [--verbose] [--deep]
+                [--auto | --confirm-all | --dry-run]
                 [--escalate-finding F00N] [--test-cmd '<cmd>']
                 [--monorepo-subtree-limit N] [--reverify-state]
                 [--full-rerun | --no-rerun]
