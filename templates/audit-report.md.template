@@ -5,9 +5,21 @@ audit_target: {{audit_target}}
 audit_timestamp: {{audit_timestamp}}
 tool_version: {{tool_version}}
 flags: {{flags}}
+input_type: {{input_type}}
+project_content_sha256: {{project_content_sha256}}
+contained_types: {{contained_types}}
 language_summary: {{language_summary}}
 build_manifest: {{build_manifest}}
 test_command: {{test_command}}
+
+detector_confidence:
+  classified_type: {{detector_confidence.classified_type}}
+  confidence: {{detector_confidence.confidence}}
+  primary_score: {{detector_confidence.primary_score}}
+
+section_selector_confidence:
+  input_type: {{section_selector_confidence.input_type}}
+  dimensions: {{section_selector_confidence.dimensions}}
 
 dimensions_activated: {{dimensions_activated}}
 dimensions_skipped:
@@ -82,6 +94,18 @@ effort: {{effort}}
 priority_score: {{priority_score}}
 verify_by: {{verify_by}}
 tests_present_signal: {{tests_present_signal}}
+# --- v2.x medical-diagnostic tetrad ---
+presenting_symptom: |
+  {{presenting_symptom}}
+underlying_cause: |
+  {{underlying_cause}}
+prognosis: |
+  {{prognosis}}
+confidence_interval: {{confidence_interval}}
+falsifiability:
+  status: {{falsifiability.status}}
+  counter_argument: "{{falsifiability.counter_argument}}"
+  survival_rationale: "{{falsifiability.survival_rationale}}"
 provenance:
   node: {{provenance.node}}
   mode: {{provenance.mode}}

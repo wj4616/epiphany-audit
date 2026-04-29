@@ -19,6 +19,13 @@ resolved_flags: (from N01)
 save_decision: "accepted" | "declined"
 saved_report_path: string | null    // null on decline
 report_id: string                   // the uuid v4 generated for this report
+self_audit_traces: {
+  detector_confidence: object,
+  section_selector_confidence: object,
+  tetrad_completeness: { total_findings: integer, tetrad_complete: integer, incomplete_ids: string[] },
+  two_axis_scores: { creativity: number, functional_correctness: number },
+  falsifiability_survival_log: { survived: integer, downgraded: integer, dropped: integer }
+}
 ```
 
 ## Side Effects
@@ -51,9 +58,39 @@ Written at save time. Format:
 ```
 Populated with finding outcomes as `--fix` runs proceed. State file is authoritative over git-log during idempotency checks in N16.
 
-## Project-Slug Derivation
+## Project-Slug Derivation Per Input Type (v2.x)
 
-`basename(audit_target)`, lowercased, non-alphanumeric chars → `-`, runs of `-` collapsed, leading/trailing `-` stripped, truncated to 50 chars.
+| Input Type | Slug Derivation | Example |
+|-----------|-----------------|---------|
+| Code | `basename(audit_target)` (v1.x unchanged) | `CogVST-20260429-143000.md` |
+| Specification document | `basename(file, '.md')-spec` | `enhanced-vst-playbook-spec-20260429-143000.md` |
+| Plan document | `basename(file, '.md')-plan` | `migration-plan-20260429-143000.md` |
+| Claude code ai agent skill | `basename(skill_dir)-skill` | `epiphany-audit-skill-20260429-143000.md` |
+| Detailed prompt | `basename(file, '.md')-prompt` (strip date prefixes when redundant) | `prompt-graph-design-audit-orchestration-prompt-20260429-143000.md` |
+
+All slugs are lowercased, non-alphanumeric chars → `-`, runs of `-` collapsed, leading/trailing `-` stripped, truncated to 80 chars.
+
+## project_content_sha256 Computation and Storage (v2.x)
+
+Computed at save time. Hashing scope per input type:
+
+| Input Type | Hashing Scope |
+|-----------|---------------|
+| Code | `git ls-tree -r HEAD \| sha256sum` (if git repo); else `find . -type f -not -path './.git/*' -exec sha256sum {} \; \| sort \| sha256sum` |
+| Spec/Plan/Prompt (single-file) | `sha256sum <file>` |
+| Skill (directory) | `find <skill-dir> -type f -exec sha256sum {} \; \| sort \| sha256sum` |
+
+Stored in audit report frontmatter as `project_content_sha256`. Used by N16 FixTriage for recency/staleness detection at `--fix` invocation.
+
+## Self-Audit Trace Emission (v2.x)
+
+Every report save emits a self-audit trace section appended to the report:
+
+- **detector-confidence trace** — from N00b: was input-type classification confident? on what fingerprints?
+- **section-selector-confidence trace** — from N02: which sections activated/suppressed, why?
+- **tetrad-completeness check** — every finding has all 4 tetrad tags
+- **two-axis scoring verdict** — creativity >=7 AND functional-correctness >=7 (hard gate)
+- **falsifiability survival log** — which creative findings survived their counter-arguments
 
 ## Token Budget
 

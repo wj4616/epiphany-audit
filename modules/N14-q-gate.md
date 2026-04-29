@@ -37,11 +37,12 @@ Read-only (may read source files for location verification on cache miss).
 ## Pass A — Mechanical Checks (inline, mandatory)
 
 1. Mandatory-field completeness: every finding has all required schema fields; missing → demote to Unverified Hypotheses
-2. Location verification: for each finding's `location`, check `location_verification_cache`; on cache miss, Read the file and verify; unverifiable → demote
-3. CRITICAL/HIGH × Confidence floor: CRITICAL or HIGH severity requires Confidence ≥ MEDIUM; violation → demote or lower severity
-4. Duplicate merge: any remaining duplicates N11 missed → merge with count
-5. No-comment-echo: finding text must not merely quote the project's own TODO/FIXME without independent verification; violation → demote
-6. No-LOW-only warning: if every main-body finding is LOW or INFO severity, emit a user-facing warning (not a halt) — signals possible under-sensitivity
+2. **Tetrad-completeness check (v2.x):** verify all 4 tetrad tags (`presenting_symptom`, `underlying_cause`, `prognosis`, `confidence_interval`) are present on every finding. Missing any tetrad element → finding is malformed, demote to Unverified Hypotheses with reason `"tetrad-incomplete"`
+3. Location verification: for each finding's `location`, check `location_verification_cache`; on cache miss, Read the file and verify; unverifiable → demote
+4. CRITICAL/HIGH × Confidence floor: CRITICAL or HIGH severity requires Confidence ≥ MEDIUM; violation → demote or lower severity
+5. Duplicate merge: any remaining duplicates N11 missed → merge with count
+6. No-comment-echo: finding text must not merely quote the project's own TODO/FIXME without independent verification; violation → demote
+7. No-LOW-only warning: if every main-body finding is LOW or INFO severity, emit a user-facing warning (not a halt) — signals possible under-sensitivity
 
 Under token-cap: run `pass-a-minimal` (mandatory-field + location only; other checks skipped).
 
