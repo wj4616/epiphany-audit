@@ -5,7 +5,8 @@
   "type": "object",
   "required": [
     "schema_version", "report_id", "audit_target", "audit_timestamp",
-    "tool_version", "flags", "dimensions_activated",
+    "tool_version", "flags", "input_type", "project_content_sha256",
+    "dimensions_activated",
     "subtree_grouping_applied", "token_cap_partial",
     "q_gate", "findings"
   ],
@@ -15,9 +16,55 @@
     "audit_target":   {"type": "string"},
     "audit_timestamp":{"type": "string"},
     "tool_version":   {"type": "string"},
+    "input_type": {
+      "type": "string",
+      "enum": ["code","specification-document","plan-document","skill","prompt","ambiguous-text"]
+    },
+    "project_content_sha256": {"type": "string"},
+    "contained_types": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["code","specification-document","plan-document","skill","prompt","ambiguous-text"]}
+    },
+    "contained_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "line_range", "depth"],
+        "properties": {
+          "type":       {"type": "string"},
+          "line_range": {"type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2},
+          "depth":      {"type": "integer"}
+        }
+      }
+    },
+    "detector_confidence": {
+      "type": "object",
+      "required": ["classified_type", "confidence", "primary_score"],
+      "properties": {
+        "classified_type": {"type": "string"},
+        "confidence":       {"type": "string", "enum": ["high","marginal","ambiguous"]},
+        "primary_score":    {"type": "number"},
+        "runner_up_type":   {"type": "string"},
+        "runner_up_score":  {"type": "number"},
+        "fingerprints_observed": {"type": "array"},
+        "multi_type":       {"type": "boolean"},
+        "secondary_types":  {"type": "array", "items": {"type": "string"}},
+        "ambiguous_reason": {"oneOf": [{"type": "string"}, {"type": "null"}]}
+      }
+    },
+    "section_selector_confidence": {
+      "type": "object",
+      "required": ["input_type", "dimensions"],
+      "properties": {
+        "input_type": {"type": "string"},
+        "dimensions": {"type": "object"},
+        "finding_class_suppressions": {"type": "array"},
+        "multi_type_union": {"type": "object"}
+      }
+    },
     "flags": {
       "type": "array",
-      "items": {"type": "string", "enum": ["audit","verbose","deep","improve"]},
+      "items": {"type": "string", "enum": ["audit","verbose","deep","improve","fix"]},
       "uniqueItems": true
     },
     "language_summary": {"type": "object", "additionalProperties": {"type": "integer"}},
@@ -93,7 +140,8 @@
         "id", "location", "dimensions", "severity", "confidence",
         "evidence_excerpt", "evidence_excerpt_extended",
         "rationale", "remediation", "false_positive_check",
-        "effort", "priority_score", "tests_present_signal", "provenance"
+        "effort", "priority_score", "tests_present_signal", "provenance",
+        "presenting_symptom", "underlying_cause", "prognosis", "confidence_interval"
       ],
       "properties": {
         "id":          {"type": "string", "pattern": "^F[0-9]{3,}$"},
@@ -105,6 +153,19 @@
         "evidence_excerpt_extended": {"type": "boolean"},
         "rationale":   {"type": "string"},
         "remediation": {"type": "string"},
+        "presenting_symptom":  {"type": "string"},
+        "underlying_cause":    {"type": "string"},
+        "prognosis":           {"type": "string"},
+        "confidence_interval": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+        "falsifiability": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status":              {"type": "string", "enum": ["survived","downgraded","dropped"]},
+            "counter_argument":    {"type": "string"},
+            "survival_rationale":  {"type": "string"}
+          }
+        },
         "false_positive_check": {
           "type": "object",
           "required": ["intentional","file_symbol_verified","reachable_from_entry","fix_breaks_dependents"],

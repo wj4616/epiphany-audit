@@ -18,7 +18,8 @@
       "required": ["languages", "project_markers"],
       "properties": {
         "languages":       {"oneOf": [{"type": "array", "items": {"type": "string"}}, {"type": "string", "const": "*"}]},
-        "project_markers": {"type": "array", "items": {"type": "string"}}
+        "project_markers": {"type": "array", "items": {"type": "string"}},
+        "input_types":     {"type": "array", "items": {"type": "string", "enum": ["code","specification-document","plan-document","skill","prompt","ambiguous-text"]}}
       }
     },
     "activation_triggers": {
