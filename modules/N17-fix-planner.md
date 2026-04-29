@@ -7,7 +7,7 @@
 ## Inputs
 
 ```
-triage_result: (from N16)
+triage_result: (from N16 — includes input_type from report frontmatter)
 fix_groups: FixGroup[]
 resolved_flags: (from entry)
 ```
@@ -51,6 +51,22 @@ Default policy (applied in order T1 → T2 → T3):
 Decline on Tier-N → all Tier-N findings marked `deferred (user-declined-batch)`; pipeline proceeds to Tier-N+1. Explicit `halt` → stop entirely.
 
 **Per-fix-opt-in floor (anti-conformity):** even under `--auto`, any finding with `confidence < HIGH OR effort > trivial` requires per-fix opt-in (not auto-applied). Only HIGH-confidence, trivial-effort findings auto-apply under `--auto`.
+
+## Per-Input-Type Confirmation Thresholds (v2.x)
+
+For non-code input types, the risk classification thresholds override the tier system. Auto-apply without confirmation when ALL low-risk criteria for the input type are met:
+
+| Input Type | Low-Risk (auto-apply) | High-Risk (require confirmation) |
+|-----------|----------------------|--------------------------------|
+| Code | Tier-1: ≤2 lines, single file, no signature change, confidence=HIGH, effort=trivial (v1.x unchanged) | Tier-2 and Tier-3 (v1.x unchanged) |
+| Specification document | Single-section addition only, no removal of existing content, no heading hierarchy restructuring | Any removal, heading restructuring, multi-section edits, or acceptance-criteria rewrites |
+| Plan document | Checkpoint addition (new checkpoint only, no reordering), task-list append (new tasks only), or missing-rollback-procedure addition | Phase reordering, dependency corrections, task removal, any edit touching existing phase structure |
+| Claude code ai agent skill | YAML frontmatter field addition only (new field, no existing-field modification), or supporting-file addition (new file, no existing-file edits) | Any SKILL.md prose modification, existing frontmatter field changes, supporting-file modifications, module edits |
+| Detailed prompt | `<meta>` tag addition, output-format addition (new section, no existing-format modification), or verification-scaffolding addition | Prompt body modifications, frontmatter changes, embedded schema changes, technique-application modifications |
+
+These thresholds override the existing tier system for non-code types. For code, the existing v1.x tier system remains authoritative and unchanged.
+
+When `input_type` is not "code", the Tier Confirmation Protocol above is replaced by this per-type table. The `--auto`, `--confirm-all`, and `--dry-run` flags still gate behavior: `--auto` auto-applies low-risk; `--confirm-all` requires confirmation for everything; `--dry-run` emits plan only.
 
 ## Token Budget
 

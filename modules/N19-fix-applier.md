@@ -11,6 +11,7 @@ fix_groups: FixGroup[]          // topo-sorted from N16
 user_approvals: object          // from N17
 baseline_metrics: object        // from N18
 branch_name: string             // from N18
+input_type: string              // from N16 triage (v2.x — drives transactional scope)
 ```
 
 ## Outputs
@@ -29,6 +30,59 @@ recovery_manifest_updates: RecoveryEvent[]
 ## Halt Conditions
 
 - `halt-mid-fix-on-perfix-cap-hit`: E_repair retries exhausted on a fix-group AND every remaining group is blocked by it (routes through N23 partial report first via E_halt_partial before emitting halt envelope)
+
+## Multi-File Transactional Semantics (v2.x)
+
+For non-code input types (specification-document, plan-document, skill, prompt), fix-groups may span multiple files. The transactional contract ensures atomicity across all files in a fix-group:
+
+### Transaction Protocol (per fix-group, replaces single-file atomic loop for multi-file groups)
+
+```
+1. PRE-STATE CAPTURE:
+   a. For each file in the fix-group: capture original content (read into memory)
+   b. Record original SHAs for git-tracked files: git hash-object <file>
+   c. For new files (skill supporting-file additions): record "new-file" sentinel
+
+2. APPLY ALL EDITS (no git operations between edits):
+   a. Apply all Write operations across all files in the fix-group
+   b. Track which files were modified and which are new
+
+3. VERIFY ALL:
+   a. Run N20 PerFixVerifier against the full set of changed files
+   b. Verifier checks correctness, coherence, and cross-file consistency
+
+4. COMMIT OR ROLLBACK (atomic):
+   a. ALL VERIFY PASS:
+      - git add <all-touched-files>
+      - Single commit: git commit -m "[AUDIT-NNN] <summary>" (one commit covers all files in fix-group)
+      - For behavioral fixes: add regression-prevention tests in same commit (or paired follow-up)
+      - Record all files as applied together
+
+   b. ANY VERIFY FAIL:
+      - For each tracked-touched file: git checkout -- <file> (restore original)
+      - For each new-file: rm <file> (clean up)
+      - No partial state left on disk
+      - Route through E_repair (retry → replan → cap-hit)
+```
+
+### Per-Type Transactional Scope
+
+| Input Type | Typical Fix-Group Span | Transactional Behavior |
+|-----------|----------------------|----------------------|
+| Code | Single file (v1.x) | Single-file commit per finding; unchanged from v1.x |
+| Specification document | Single .md file | All edits to the spec doc in one fix-group are committed atomically |
+| Plan document | Single .md file | All edits to the plan doc in one fix-group are committed atomically |
+| Claude code ai agent skill | Multiple files (SKILL.md + modules/ + schemas/) | All files in the fix-group committed together or rolled back together; multi-file transactional |
+| Detailed prompt | Single .md file | All edits to the prompt file in one fix-group are committed atomically |
+
+### Hard Rules (extended for multi-file)
+
+- **Never partial commit** within a multi-file fix-group — all files commit together or none do
+- **Never `git revert`** — failed attempts never reach commit, so there's nothing to revert
+- **Never bundle** findings across fix-groups in one commit
+- **Never `--no-verify`** — hook failures route through E_repair
+- **Never amend** prior commits
+- **One concern per commit** — even when multi-file, the commit addresses one finding
 
 ## Atomic Loop (per fix-group)
 

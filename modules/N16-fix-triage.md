@@ -10,6 +10,8 @@
 audit_report_path: string           // resolved per §1.3 <report> resolution order
 resolved_flags: (from N01 or --fix entry)
 recovery_manifest: object | null    // present when entered via resume
+input_type: string                  // from report frontmatter (v2.x)
+project_model: (from N01)           // for prerequisite check (v2.x)
 ```
 
 ## Outputs
@@ -50,11 +52,46 @@ Runs before F-VAL when entered via `resume` from `halt-on-recovery-conflict`. Or
 4. Move `in_flight_finding_id` back to `pending` in recovery manifest
 5. Proceed to normal F-VAL ingest
 
+## Audit-Report Prerequisite Check (v2.x — mandatory at `--fix` and `--improve` invocation)
+
+Runs BEFORE F-VAL ingest. Determines whether the audit report is recent enough to act on.
+
+### Resolution Flow
+
+1. **No `<report>` argument (v2.x canonical path):**
+   - Resolve the target project via implied-context resolution
+   - Derive the project slug per input-type slug rules
+   - Search `~/docs/epiphany/audit/` for reports matching the slug pattern, ordered by timestamp descending
+   - Zero reports → prompt: "No audit report found for this project. Run the audit first? (y/n)" → on `y`: route to audit pipeline then resume fix; on `n`: `halt-on-no-audit-report`
+   - Exactly one report → use it
+   - Multiple reports → list candidates with timestamps, ask user to select; ctrl-C → `halt-on-user-abort`
+
+2. **Explicit `<report>` argument (v1.x back-compat path):**
+   - Resolve per absolute path, cwd-relative, bare filename in `~/docs/epiphany/audit/`, then `fix-reports/`
+   - Multiple matches → `halt-on-ambiguous-fix-report`
+   - No match → `halt-on-unresolvable-fix-report`
+
+### Recency / Staleness Detection
+
+Once a report is resolved:
+
+1. Compute current `project_content_sha256` per the hashing scope for the `input_type` (see N15 §project_content_sha256)
+2. **Recent:** `current_sha256 == report.project_content_sha256` → proceed to F-VAL ingest
+3. **Stale:** `current_sha256 != report.project_content_sha256` → prompt: "Audit report is stale (project modified since last audit). Re-run audit before applying fixes? (y/n)" → on `y`: re-audit then resume fix pipeline; on `n`: proceed with stale report under user acknowledgment; staleness recorded in run log
+4. **Report file missing:** SHA-256 captured in metadata but file deleted → `halt-on-stale-source-report`
+5. **No report found at all** (no-arg path) → prompt user to audit first (see resolution flow above)
+
+### New Halt Conditions (v2.x)
+
+- `halt-on-no-audit-report`: no report exists and user declined audit-first prompt
+- `halt-on-stale-source-report`: report file missing (was referenced but deleted)
+
 ## F-VAL Ingest (schema validation)
 
 - Parse YAML frontmatter + finding bodies from the audit report
 - Validate parsed JSON against `schemas/audit-report-v1.schema.json`
 - Capture SHA-256 of the report file as `source_audit_report_sha256`
+- Extract `input_type` from report frontmatter for per-type routing downstream (v2.x)
 - Suspicious-content prompt overrides `--auto` (requires explicit user confirmation)
 
 ## Idempotency Check
@@ -76,7 +113,7 @@ Two findings have **incompatible** edits iff their remediation diffs both modify
 
 ## Token Budget
 
-Moderate (reads audit report, state file; performs triage logic).
+Moderate. Prerequisite check reads report frontmatter and computes `project_content_sha256` (O(files) for skill/code types; O(1) for single-file types). F-VAL reads audit report and state file; triage logic scales with finding count.
 
 ## Backtrack / Aggregation
 
