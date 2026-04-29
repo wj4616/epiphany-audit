@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "nodes": [
+    {
+      "id": "N01",
+      "name": "ContextIntake",
+      "type": "ingest",
+      "mode": "inline",
+      "active_in": "audit",
+      "inputs": ["cli_args", "cwd"],
+      "outputs": ["project_model", "resolved_flags"],
+      "aggregation_policy": "n/a",
+      "halt_conditions": ["halt-pre-audit"]
+    }
+  ],
+  "edges": [
+    {
+      "id": "E01",
+      "source": "N01",
+      "target": "N02",
+      "channel": "data",
+      "cardinality": "1:1",
+      "activation": "always"
+    }
+  ]
+}

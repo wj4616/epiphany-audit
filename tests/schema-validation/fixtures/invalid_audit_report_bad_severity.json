@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "report_id": "550e8400-e29b-41d4-a716-446655440001",
+  "audit_target": "/home/user/myproject",
+  "audit_timestamp": "2026-04-27T10:00:00Z",
+  "tool_version": "1.0.0",
+  "flags": [],
+  "language_summary": {},
+  "build_manifest": null,
+  "test_command": null,
+  "dimensions_activated": ["CORRECTNESS", "MAINTAINABILITY"],
+  "dimensions_skipped": [],
+  "subtree_grouping_applied": false,
+  "gap_dimensions_offered": [],
+  "gap_dimensions_auto_added": [],
+  "gap_dimensions_accepted": [],
+  "token_cap_partial": false,
+  "truncated_at_node": null,
+  "improvement_report_ref": null,
+  "dimensions_partial": [],
+  "q_gate": {"pass_a": "pass", "pass_b": "skipped-low-volume", "pass_b_lens": null, "pass_b_skip_reason": null},
+  "partial_report_warning": null,
+  "findings": [
+    {
+      "id": "F001",
+      "location": "src/main.py:10",
+      "dimensions": ["CORRECTNESS"],
+      "severity": "ULTRA",
+      "confidence": "HIGH",
+      "evidence_excerpt": "x = 1",
+      "evidence_excerpt_extended": false,
+      "rationale": "test",
+      "remediation": "fix it",
+      "false_positive_check": {
+        "intentional":           {"value": false, "justification": null},
+        "file_symbol_verified":  {"value": true,  "justification": "Read at src/main.py:10"},
+        "reachable_from_entry":  {"value": true,  "justification": "main"},
+        "fix_breaks_dependents": {"value": false, "justification": null}
+      },
+      "effort": "trivial",
+      "priority_score": 9.0,
+      "verify_by": null,
+      "tests_present_signal": false,
+      "provenance": {
+        "node": "N04", "mode": "inline", "model": "claude-sonnet-4-6",
+        "pass_b_model": null, "prompt_hash": "abc123",
+        "plugin_name": null, "plugin_version": null,
+        "audit_rerun_iteration": 0, "q_gate_pass_b_demoted": false
+      }
+    }
+  ]
+}

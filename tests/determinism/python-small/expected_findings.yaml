@@ -1,0 +1,22 @@
+# Frozen expected-finding set for python-small determinism fixture.
+# The determinism harness checks that a fresh audit run produces ≥80% set-overlap
+# with these findings (by location + defect class).
+# Run: python tests/determinism/check_overlap.py <actual-report-path>
+fixture_version: 1
+source_dir: tests/determinism/python-small/source/
+
+expected_findings:
+  - id_pattern: "F0*"
+    location: "source/parser.py:6"
+    dimension: CORRECTNESS
+    severity: HIGH
+    defect_class: off-by-one
+    notes: "range(len(tokens) - 1) drops the final token"
+
+  - id_pattern: "F0*"
+    location: "source/parser.py:14"
+    dimension: PERFORMANCE
+    severity: LOW
+    defect_class: quadratic-membership-check
+    notes: "item not in seen is O(n) per item; should use a set"
+    optional: true   # may not be activated if PERFORMANCE triggers do not fire

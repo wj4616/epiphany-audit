@@ -1,0 +1,102 @@
+---
+schema_version: 1
+improvement_report_id: {{improvement_report_id}}
+source_audit_report: {{source_audit_report}}
+source_report_id: {{source_report_id}}
+audit_target: {{audit_target}}
+improvement_timestamp: {{improvement_timestamp}}
+tool_version: {{tool_version}}
+flags: {{flags}}
+improvement_partial: {{improvement_partial}}
+total_candidates: {{total_candidates}}
+filtered_out: {{filtered_out}}
+survivors: {{survivors}}
+notable: {{notable}}
+quick_wins: {{quick_wins}}
+worthwhile: {{worthwhile}}
+---
+
+{{#improvement_partial}}
+> **WARNING PARTIAL IMPROVEMENT ANALYSIS:** {{improvement_partial_warning}}
+
+{{/improvement_partial}}
+## Summary
+
+- **Brainstormed:** {{total_candidates}} candidates
+- **Filtered by OEF:** {{filtered_out}} (cost > utility, marginal utility, or speculative language)
+- **Survivors:** {{survivors}} (notable: {{notable}} | quick wins: {{quick_wins}} | worthwhile: {{worthwhile}})
+
+{{#zero_survivors}}
+No improvements above the utility/cost threshold were found. This is a valid result — the project may be well-optimized in its current state.
+{{/zero_survivors}}
+
+---
+
+{{#notable_entries}}
+## Notable Improvements (high utility, low-to-medium cost)
+
+### {{id}}
+
+```yaml
+id: {{id}}
+category: notable
+area: {{area}}
+utility_score: {{utility_score}}
+cost_score: {{cost_score}}
+description: |
+  {{description}}
+action: |
+  {{action}}
+success_measure: |
+  {{success_measure}}
+```
+{{/notable_entries}}
+
+## Quick Wins
+
+{{#quick_win_entries}}
+### {{id}}
+
+```yaml
+id: {{id}}
+category: quick-win
+area: {{area}}
+utility_score: {{utility_score}}
+cost_score: 1
+description: |
+  {{description}}
+action: |
+  {{action}}
+success_measure: |
+  {{success_measure}}
+```
+{{/quick_win_entries}}
+
+## Worthwhile Improvements
+
+{{#worthwhile_entries}}
+### {{id}}
+
+```yaml
+id: {{id}}
+category: worthwhile
+area: {{area}}
+utility_score: {{utility_score}}
+cost_score: {{cost_score}}
+description: |
+  {{description}}
+action: |
+  {{action}}
+success_measure: |
+  {{success_measure}}
+```
+{{/worthwhile_entries}}
+
+{{#verbose_mode}}
+## Filtered Improvements (--verbose only)
+
+{{#filtered_entries}}
+- **{{id}}** — `{{area}}` | utility={{utility_score}} cost={{cost_score}}
+  OEF rationale: {{oef_rationale}}
+{{/filtered_entries}}
+{{/verbose_mode}}

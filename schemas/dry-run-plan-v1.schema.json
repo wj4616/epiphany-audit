@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Dry-Run Plan Schema v1",
+  "$id": "dry-run-plan-v1",
+  "type": "object",
+  "required": [
+    "schema_version", "plan_id", "source_audit_report",
+    "source_audit_report_sha256", "source_report_id",
+    "plan_timestamp", "flags", "triage_summary",
+    "simulated_branch", "body"
+  ],
+  "properties": {
+    "schema_version":            {"type": "integer", "const": 1},
+    "plan_id":                   {"type": "string"},
+    "source_audit_report":       {"type": "string"},
+    "source_audit_report_sha256":{"type": "string"},
+    "source_report_id":          {"type": "string"},
+    "plan_timestamp":            {"type": "string"},
+    "flags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "contains": {"const": "dry-run"}
+    },
+    "triage_summary": {
+      "type": "object",
+      "required": ["total_findings","tier_1_count","tier_2_count","tier_3_count","deferred_at_triage","conflicting_groups"],
+      "properties": {
+        "total_findings":    {"type": "integer", "minimum": 0},
+        "tier_1_count":      {"type": "integer", "minimum": 0},
+        "tier_2_count":      {"type": "integer", "minimum": 0},
+        "tier_3_count":      {"type": "integer", "minimum": 0},
+        "deferred_at_triage":{"type": "integer", "minimum": 0},
+        "conflicting_groups":{"type": "array"}
+      }
+    },
+    "simulated_branch":      {"type": "string"},
+    "test_command_resolved": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "body": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/plan_entry"}
+    }
+  },
+  "definitions": {
+    "plan_entry": {
+      "type": "object",
+      "required": ["id", "status", "tier", "fix_group_id", "proposed_diff", "files_touched"],
+      "properties": {
+        "id":            {"type": "string"},
+        "status":        {"type": "string", "enum": ["simulated", "deferred-at-triage"]},
+        "tier":          {"type": "integer", "enum": [1, 2, 3]},
+        "tier_classification_reason": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "fix_group_id":  {"type": "string"},
+        "proposed_diff": {"type": "string"},
+        "files_touched": {"type": "array", "items": {"type": "string"}},
+        "blast_radius":  {"type": "object"},
+        "projected_verification": {"type": "object"},
+        "projected_commit_message": {"type": "string"},
+        "projected_regression_test": {"type": "string"},
+        "notes": {"oneOf": [{"type": "string"}, {"type": "null"}]}
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name": "bad-plugin",
+  "display_name": "Bad Plugin",
+  "version": "1.0.0",
+  "applies_to": {
+    "languages": ["python"],
+    "project_markers": []
+  },
+  "exclusions": [],
+  "prompt_template": "Analyze for issues.\n",
+  "kb_route_query": null,
+  "intra_node_token_budget": 30000,
+  "priority": "medium"
+}

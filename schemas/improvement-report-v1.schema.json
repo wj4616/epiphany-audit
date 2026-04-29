@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Improvement Report Schema v1",
+  "$id": "improvement-report-v1",
+  "type": "object",
+  "required": [
+    "schema_version", "improvement_report_id", "source_audit_report",
+    "source_report_id", "audit_target", "improvement_timestamp",
+    "tool_version", "flags", "improvement_partial",
+    "total_candidates", "filtered_out", "survivors",
+    "notable", "quick_wins", "worthwhile", "body"
+  ],
+  "properties": {
+    "schema_version":        {"type": "integer", "const": 1},
+    "improvement_report_id": {"type": "string"},
+    "source_audit_report":   {"type": "string"},
+    "source_report_id":      {"type": "string"},
+    "audit_target":          {"type": "string"},
+    "improvement_timestamp": {"type": "string"},
+    "tool_version":          {"type": "string"},
+    "flags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "contains": {"const": "improve"}
+    },
+    "improvement_partial": {"type": "boolean"},
+    "total_candidates": {"type": "integer", "minimum": 0},
+    "filtered_out":     {"type": "integer", "minimum": 0},
+    "survivors":        {"type": "integer", "minimum": 0},
+    "notable":          {"type": "integer", "minimum": 0},
+    "quick_wins":       {"type": "integer", "minimum": 0},
+    "worthwhile":       {"type": "integer", "minimum": 0},
+    "body": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/improvement_entry"}
+    }
+  },
+  "definitions": {
+    "improvement_entry": {
+      "type": "object",
+      "required": ["id", "category", "area", "utility_score", "cost_score", "description", "action", "success_measure"],
+      "properties": {
+        "id":            {"type": "string", "pattern": "^I[0-9]{3,}$"},
+        "category":      {"type": "string", "enum": ["quick-win","worthwhile","notable"]},
+        "area":          {"type": "string", "enum": ["developer-experience","testing","architecture","performance","tooling","dependencies","documentation"]},
+        "utility_score": {"type": "integer", "minimum": 2, "maximum": 3},
+        "cost_score":    {"type": "integer", "minimum": 1, "maximum": 3},
+        "description":   {"type": "string"},
+        "action":        {"type": "string"},
+        "success_measure":{"type": "string"},
+        "notes":         {"oneOf": [{"type": "string"}, {"type": "null"}]}
+      }
+    }
+  }
+}

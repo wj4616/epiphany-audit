@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "fix_report_id": "660e8400-e29b-41d4-a716-446655440000",
+  "partial": false,
+  "halt_state": null,
+  "source_audit_report": "/home/user/docs/epiphany/audit/myproject-20260427-100000.md",
+  "source_audit_report_sha256": "abc123def456",
+  "source_report_id": "550e8400-e29b-41d4-a716-446655440000",
+  "fix_run_timestamp": "2026-04-27T11:00:00Z",
+  "branch": "epiphany-audit/550e8400-20260427",
+  "flags": [],
+  "test_command_used": "pytest",
+  "baseline_metrics": {
+    "tests":      {"passed": 10, "failed": 0, "skipped": 0},
+    "type_check": {"errors": 0},
+    "lint":       {"total_warnings": 2},
+    "build":      "pass"
+  },
+  "post_metrics": {
+    "tests":      {"passed": 11, "failed": 0, "skipped": 0},
+    "type_check": {"errors": 0},
+    "lint":       {"total_warnings": 2, "new_warnings_in_changed_regions": 0},
+    "build":      "pass"
+  },
+  "audit_rerun_delta": {
+    "scope": "skipped-tier-policy",
+    "reran_dimensions": [],
+    "resolved": ["F001"],
+    "fix_induced_regressions": [],
+    "unchanged": [],
+    "new_findings_discovered": []
+  },
+  "diff_scope_check": "pass",
+  "unmapped_hunks": [],
+  "recovery_manifest_ref": null,
+  "last_known_good_sha": "deadbeef1234",
+  "body": [
+    {
+      "id": "F001",
+      "status": "verified",
+      "status_qualifier": null,
+      "status_qualifier_target": null,
+      "tier": 1,
+      "tier_classification_reason": null,
+      "commit": "deadbeef1234",
+      "verification_outcome": "pass",
+      "regression_test_added": {
+        "status": "yes",
+        "location": "tests/test_parser.py:45",
+        "reason": null,
+        "deferred_to_followup_commit": null
+      },
+      "notes": null
+    }
+  ]
+}

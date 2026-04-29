@@ -1,0 +1,88 @@
+---
+schema_version: 1
+plan_id: {{plan_id}}
+source_audit_report: {{source_audit_report}}
+source_audit_report_sha256: {{source_audit_report_sha256}}
+source_report_id: {{source_report_id}}
+plan_timestamp: {{plan_timestamp}}
+flags: {{flags}}
+triage_summary:
+  total_findings: {{triage_summary.total_findings}}
+  tier_1_count: {{triage_summary.tier_1_count}}
+  tier_2_count: {{triage_summary.tier_2_count}}
+  tier_3_count: {{triage_summary.tier_3_count}}
+  deferred_at_triage: {{triage_summary.deferred_at_triage}}
+  conflicting_groups: {{triage_summary.conflicting_groups}}
+simulated_branch: {{simulated_branch}}
+test_command_resolved: {{test_command_resolved}}
+---
+
+## Plan Summary
+
+- **Total findings:** {{triage_summary.total_findings}}
+  (Tier-1: {{triage_summary.tier_1_count}} | Tier-2: {{triage_summary.tier_2_count}} | Tier-3: {{triage_summary.tier_3_count}} | Deferred: {{triage_summary.deferred_at_triage}})
+- **Simulated branch:** `{{simulated_branch}}`
+- **To apply:** drop `--dry-run` and re-run with `--fix {{source_audit_report}}`
+
+---
+
+## Tier-1 Fixes (mechanical — batch-confirm under default policy)
+
+{{#tier_1_entries}}
+### {{id}}
+
+```yaml
+id: {{id}}
+status: simulated
+tier: 1
+fix_group_id: {{fix_group_id}}
+proposed_diff: |
+{{proposed_diff}}
+files_touched: {{files_touched}}
+projected_commit_message: "{{projected_commit_message}}"
+```
+{{/tier_1_entries}}
+
+## Tier-2 Fixes (local logic — batch-confirm)
+
+{{#tier_2_entries}}
+### {{id}}
+
+```yaml
+id: {{id}}
+tier: 2
+fix_group_id: {{fix_group_id}}
+proposed_diff: |
+{{proposed_diff}}
+```
+{{/tier_2_entries}}
+
+## Tier-3 Fixes (cross-cutting — per-fix confirm)
+
+{{#tier_3_entries}}
+### {{id}}
+
+```yaml
+id: {{id}}
+tier: 3
+fix_group_id: {{fix_group_id}}
+proposed_diff: |
+{{proposed_diff}}
+```
+{{/tier_3_entries}}
+
+## Deferred at Triage
+
+{{#deferred_entries}}
+### {{id}}
+
+```yaml
+id: {{id}}
+status: deferred-at-triage
+defer_reason: |
+  {{defer_reason}}
+original_severity: {{original_severity}}
+original_remediation: |
+  {{original_remediation}}
+```
+{{/deferred_entries}}

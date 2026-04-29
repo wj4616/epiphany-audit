@@ -1,0 +1,157 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Audit Report Schema v1",
+  "$id": "audit-report-v1",
+  "type": "object",
+  "required": [
+    "schema_version", "report_id", "audit_target", "audit_timestamp",
+    "tool_version", "flags", "dimensions_activated",
+    "subtree_grouping_applied", "token_cap_partial",
+    "q_gate", "findings"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "report_id":      {"type": "string"},
+    "audit_target":   {"type": "string"},
+    "audit_timestamp":{"type": "string"},
+    "tool_version":   {"type": "string"},
+    "flags": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["audit","verbose","deep","improve"]},
+      "uniqueItems": true
+    },
+    "language_summary": {"type": "object", "additionalProperties": {"type": "integer"}},
+    "build_manifest":  {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "test_command":    {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "dimensions_activated": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "contains": {"const": "CORRECTNESS"}
+    },
+    "dimensions_skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dimension", "reason"],
+        "properties": {
+          "dimension": {"type": "string"},
+          "reason":    {"type": "string"}
+        }
+      }
+    },
+    "subtrees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["root", "dimensions_activated"],
+        "properties": {
+          "root":                {"type": "string"},
+          "dimensions_activated":{"type": "array", "items": {"type": "string"}},
+          "dimensions_skipped":  {"type": "array"}
+        }
+      }
+    },
+    "subtree_grouping_applied": {"type": "boolean"},
+    "gap_dimensions_offered":   {"type": "array", "items": {"type": "string"}},
+    "gap_dimensions_auto_added":{"type": "array", "items": {"type": "string"}},
+    "gap_dimensions_accepted":  {"type": "array", "items": {"type": "string"}},
+    "token_cap_partial":        {"type": "boolean"},
+    "truncated_at_node": {"oneOf": [{"type": "string", "pattern": "^N[0-9]+"}, {"type": "null"}]},
+    "improvement_report_ref": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "dimensions_partial": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dimension", "reason"],
+        "properties": {
+          "dimension": {"type": "string"},
+          "reason":    {"type": "string"}
+        }
+      }
+    },
+    "q_gate": {
+      "type": "object",
+      "required": ["pass_a", "pass_b"],
+      "properties": {
+        "pass_a": {"type": "string", "enum": ["pass","pass-minimal","fail","skipped-token-cap"]},
+        "pass_b": {"type": "string", "enum": ["pass","fail","exec-error","skipped-token-cap","skipped-low-volume"]},
+        "pass_b_lens":        {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "pass_b_skip_reason": {"oneOf": [{"type": "string"}, {"type": "null"}]}
+      }
+    },
+    "partial_report_warning": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/finding"}
+    }
+  },
+  "definitions": {
+    "finding": {
+      "type": "object",
+      "required": [
+        "id", "location", "dimensions", "severity", "confidence",
+        "evidence_excerpt", "evidence_excerpt_extended",
+        "rationale", "remediation", "false_positive_check",
+        "effort", "priority_score", "tests_present_signal", "provenance"
+      ],
+      "properties": {
+        "id":          {"type": "string", "pattern": "^F[0-9]{3,}$"},
+        "location":    {"type": "string"},
+        "dimensions":  {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "severity":    {"type": "string", "enum": ["CRITICAL","HIGH","MEDIUM","LOW","INFO"]},
+        "confidence":  {"type": "string", "enum": ["HIGH","MEDIUM","LOW"]},
+        "evidence_excerpt":          {"type": "string"},
+        "evidence_excerpt_extended": {"type": "boolean"},
+        "rationale":   {"type": "string"},
+        "remediation": {"type": "string"},
+        "false_positive_check": {
+          "type": "object",
+          "required": ["intentional","file_symbol_verified","reachable_from_entry","fix_breaks_dependents"],
+          "properties": {
+            "intentional":           {"$ref": "#/definitions/fp_field"},
+            "file_symbol_verified":  {"$ref": "#/definitions/fp_field"},
+            "reachable_from_entry":  {"$ref": "#/definitions/fp_field"},
+            "fix_breaks_dependents": {"$ref": "#/definitions/fp_field"}
+          }
+        },
+        "effort":        {"type": "string", "enum": ["trivial","modest","significant"]},
+        "priority_score":{"type": "number"},
+        "verify_by":     {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "tests_present_signal": {"type": "boolean"},
+        "provenance": {
+          "type": "object",
+          "required": ["node","mode","model","prompt_hash","audit_rerun_iteration","q_gate_pass_b_demoted"],
+          "properties": {
+            "node":                  {"type": "string"},
+            "mode":                  {"type": "string", "enum": ["inline","subagent"]},
+            "model":                 {"type": "string"},
+            "pass_b_model":          {"oneOf": [{"type": "string"}, {"type": "null"}]},
+            "prompt_hash":           {"type": "string"},
+            "plugin_name":           {"oneOf": [{"type": "string"}, {"type": "null"}]},
+            "plugin_version":        {"oneOf": [{"type": "string"}, {"type": "null"}]},
+            "audit_rerun_iteration": {"type": "integer", "minimum": 0},
+            "q_gate_pass_b_demoted": {"type": "boolean"}
+          }
+        },
+        "notes": {"type": "string"}
+      },
+      "if":   {"properties": {"evidence_excerpt_extended": {"const": true}}},
+      "then": {"properties": {"confidence": {"const": "HIGH"}}},
+      "allOf": [
+        {
+          "if":   {"properties": {"severity": {"enum": ["CRITICAL","HIGH"]}}},
+          "then": {"properties": {"confidence": {"enum": ["HIGH","MEDIUM"]}}}
+        }
+      ]
+    },
+    "fp_field": {
+      "type": "object",
+      "required": ["value", "justification"],
+      "properties": {
+        "value":         {"type": "boolean"},
+        "justification": {"oneOf": [{"type": "string"}, {"type": "null"}]}
+      }
+    }
+  }
+}

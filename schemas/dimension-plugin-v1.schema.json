@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Dimension Plugin Schema v1",
+  "$id": "dimension-plugin-v1",
+  "type": "object",
+  "required": [
+    "schema_version", "name", "display_name", "version",
+    "applies_to", "activation_triggers", "prompt_template",
+    "intra_node_token_budget", "priority"
+  ],
+  "properties": {
+    "schema_version":  {"type": "integer", "const": 1},
+    "name":            {"type": "string", "pattern": "^[a-z0-9-]+$"},
+    "display_name":    {"type": "string"},
+    "version":         {"type": "string"},
+    "applies_to": {
+      "type": "object",
+      "required": ["languages", "project_markers"],
+      "properties": {
+        "languages":       {"oneOf": [{"type": "array", "items": {"type": "string"}}, {"type": "string", "const": "*"}]},
+        "project_markers": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "activation_triggers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/definitions/trigger"}
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {"type": "string"},
+          "max_files": {"type": "integer"}
+        }
+      }
+    },
+    "prompt_template":       {"type": "string"},
+    "kb_route_query":        {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "intra_node_token_budget":{"type": "integer", "minimum": 1000},
+    "priority":              {"type": "string", "enum": ["low","medium","high"]}
+  },
+  "definitions": {
+    "trigger": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type":        {"type": "string", "enum": ["file_present","import_grep"]},
+        "path":        {"type": "string"},
+        "pattern":     {"type": "string"},
+        "min_matches": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

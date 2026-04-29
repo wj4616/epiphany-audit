@@ -1,0 +1,72 @@
+---
+schema_version: 1
+fix_report_id: {{fix_report_id}}
+partial: {{partial}}
+halt_state: {{halt_state}}
+source_audit_report: {{source_audit_report}}
+source_audit_report_sha256: {{source_audit_report_sha256}}
+source_report_id: {{source_report_id}}
+fix_run_timestamp: {{fix_run_timestamp}}
+branch: {{branch}}
+flags: {{flags}}
+test_command_used: {{test_command_used}}
+baseline_metrics:
+  tests:      { passed: {{baseline_metrics.tests.passed}}, failed: {{baseline_metrics.tests.failed}}, skipped: {{baseline_metrics.tests.skipped}} }
+  type_check: { errors: {{baseline_metrics.type_check.errors}} }
+  lint:       { total_warnings: {{baseline_metrics.lint.total_warnings}} }
+  build: {{baseline_metrics.build}}
+post_metrics:
+  tests:      { passed: {{post_metrics.tests.passed}}, failed: {{post_metrics.tests.failed}}, skipped: {{post_metrics.tests.skipped}} }
+  type_check: { errors: {{post_metrics.type_check.errors}} }
+  lint:       { total_warnings: {{post_metrics.lint.total_warnings}}, new_warnings_in_changed_regions: {{post_metrics.lint.new_warnings_in_changed_regions}} }
+  build: {{post_metrics.build}}
+audit_rerun_delta:
+  scope: {{audit_rerun_delta.scope}}
+  reran_dimensions: {{audit_rerun_delta.reran_dimensions}}
+  resolved: {{audit_rerun_delta.resolved}}
+  fix_induced_regressions: {{audit_rerun_delta.fix_induced_regressions}}
+  unchanged: {{audit_rerun_delta.unchanged}}
+  new_findings_discovered: {{audit_rerun_delta.new_findings_discovered}}
+diff_scope_check: {{diff_scope_check}}
+unmapped_hunks: {{unmapped_hunks}}
+recovery_manifest_ref: {{recovery_manifest_ref}}
+last_known_good_sha: {{last_known_good_sha}}
+---
+
+{{#deferred_items}}
+## Deferred Items
+
+{{#deferred_items}}
+- `{{id}}` — {{defer_reason}}
+{{/deferred_items}}
+
+---
+{{/deferred_items}}
+
+{{#manual_edits}}
+## Manual Edits (user-authorized scope)
+
+{{#manual_edits}}
+- `{{file}}:{{lines}}` — {{summary}} (rationale: {{rationale}})
+{{/manual_edits}}
+
+---
+{{/manual_edits}}
+
+{{#body}}
+## {{id}}
+
+```yaml
+id: {{id}}
+status: {{status}}
+status_qualifier: {{status_qualifier}}
+tier: {{tier}}
+commit: {{commit}}
+verification_outcome: {{verification_outcome}}
+regression_test_added:
+  status: {{regression_test_added.status}}
+  location: {{regression_test_added.location}}
+  deferred_to_followup_commit: {{regression_test_added.deferred_to_followup_commit}}
+notes: {{notes}}
+```
+{{/body}}

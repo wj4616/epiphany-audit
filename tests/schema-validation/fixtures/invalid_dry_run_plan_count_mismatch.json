@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "plan_id": "770e8400-e29b-41d4-a716-446655440001",
+  "source_audit_report": "/home/user/docs/epiphany/audit/myproject-20260427-100000.md",
+  "source_audit_report_sha256": "abc123def456",
+  "source_report_id": "550e8400-e29b-41d4-a716-446655440000",
+  "plan_timestamp": "2026-04-27T11:00:00Z",
+  "flags": ["dry-run"],
+  "triage_summary": {
+    "total_findings": 5,
+    "tier_1_count": 1,
+    "tier_2_count": 0,
+    "tier_3_count": 0,
+    "deferred_at_triage": 0,
+    "conflicting_groups": []
+  },
+  "simulated_branch": "epiphany-audit/550e8400-20260427",
+  "test_command_resolved": "pytest",
+  "body": []
+}

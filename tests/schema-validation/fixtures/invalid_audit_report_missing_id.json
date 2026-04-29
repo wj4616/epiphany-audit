@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "audit_target": "/home/user/myproject",
+  "audit_timestamp": "2026-04-27T10:00:00Z",
+  "tool_version": "1.0.0",
+  "flags": [],
+  "language_summary": {},
+  "build_manifest": null,
+  "test_command": null,
+  "dimensions_activated": ["CORRECTNESS", "MAINTAINABILITY"],
+  "dimensions_skipped": [],
+  "subtree_grouping_applied": false,
+  "gap_dimensions_offered": [],
+  "gap_dimensions_auto_added": [],
+  "gap_dimensions_accepted": [],
+  "token_cap_partial": false,
+  "truncated_at_node": null,
+  "improvement_report_ref": null,
+  "dimensions_partial": [],
+  "q_gate": {"pass_a": "pass", "pass_b": "skipped-low-volume", "pass_b_lens": null, "pass_b_skip_reason": null},
+  "partial_report_warning": null,
+  "findings": []
+}

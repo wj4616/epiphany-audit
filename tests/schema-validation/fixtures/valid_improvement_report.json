@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "improvement_report_id": "880e8400-e29b-41d4-a716-446655440000",
+  "source_audit_report": "/home/user/docs/epiphany/audit/myproject-20260427-100000.md",
+  "source_report_id": "550e8400-e29b-41d4-a716-446655440000",
+  "audit_target": "/home/user/myproject",
+  "improvement_timestamp": "2026-04-27T12:00:00Z",
+  "tool_version": "1.0.0",
+  "flags": ["improve"],
+  "improvement_partial": false,
+  "total_candidates": 5,
+  "filtered_out": 3,
+  "survivors": 2,
+  "notable": 0,
+  "quick_wins": 1,
+  "worthwhile": 1,
+  "body": [
+    {
+      "id": "I001",
+      "category": "quick-win",
+      "area": "testing",
+      "utility_score": 2,
+      "cost_score": 1,
+      "description": "The project uses dynamic test discovery but has no conftest.py at the repo root. Failures in fixture setup are silently swallowed on Python < 3.11, meaning a broken fixture causes zero tests to run rather than N failures.",
+      "action": "Add a minimal conftest.py at the repo root with a session-scoped fixture guard: assert sys.version_info >= (3, 10).",
+      "success_measure": "Running pytest with a broken fixture produces a visible ERROR line rather than 'collected 0 items'.",
+      "notes": null
+    },
+    {
+      "id": "I002",
+      "category": "worthwhile",
+      "area": "developer-experience",
+      "utility_score": 2,
+      "cost_score": 2,
+      "description": "The project has no pre-commit hook configuration, so formatting violations accumulate silently.",
+      "action": "Add .pre-commit-config.yaml with ruff and mypy hooks; run pre-commit install.",
+      "success_measure": "git commit on unformatted code produces an immediate ruff violation rather than CI failure minutes later.",
+      "notes": null
+    }
+  ]
+}

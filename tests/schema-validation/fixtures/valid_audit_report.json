@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "report_id": "550e8400-e29b-41d4-a716-446655440000",
+  "audit_target": "/home/user/myproject",
+  "audit_timestamp": "2026-04-27T10:00:00Z",
+  "tool_version": "1.0.0",
+  "flags": [],
+  "language_summary": {"python": 12},
+  "build_manifest": "pyproject.toml",
+  "test_command": "pytest",
+  "dimensions_activated": ["CORRECTNESS", "MAINTAINABILITY"],
+  "dimensions_skipped": [
+    {"dimension": "SECURITY", "reason": "no network/IO/DB/auth surfaces detected"}
+  ],
+  "subtree_grouping_applied": false,
+  "gap_dimensions_offered": [],
+  "gap_dimensions_auto_added": [],
+  "gap_dimensions_accepted": [],
+  "token_cap_partial": false,
+  "truncated_at_node": null,
+  "improvement_report_ref": null,
+  "dimensions_partial": [],
+  "q_gate": {
+    "pass_a": "pass",
+    "pass_b": "skipped-low-volume",
+    "pass_b_lens": null,
+    "pass_b_skip_reason": "fewer than 5 findings and no CRITICAL/HIGH severity"
+  },
+  "partial_report_warning": null,
+  "findings": [
+    {
+      "id": "F001",
+      "location": "src/parser.py:142",
+      "dimensions": ["CORRECTNESS"],
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "evidence_excerpt": "for i in range(len(tokens) - 1):\n    emit(tokens[i])\n# final token never emitted",
+      "evidence_excerpt_extended": false,
+      "rationale": "Loop bound drops final token; downstream consumer expects all N tokens.",
+      "remediation": "-    for i in range(len(tokens) - 1):\n+    for i in range(len(tokens)):",
+      "false_positive_check": {
+        "intentional":           {"value": false, "justification": "no test or comment justifies the -1"},
+        "file_symbol_verified":  {"value": true,  "justification": "Read at src/parser.py:140-145"},
+        "reachable_from_entry":  {"value": true,  "justification": "called by parse_input in main.py:23"},
+        "fix_breaks_dependents": {"value": false, "justification": "grep shows no caller relies on N-1 emission"}
+      },
+      "effort": "trivial",
+      "priority_score": 9.0,
+      "verify_by": null,
+      "tests_present_signal": false,
+      "provenance": {
+        "node": "N04",
+        "mode": "inline",
+        "model": "claude-sonnet-4-6",
+        "pass_b_model": null,
+        "prompt_hash": "a3f9e2c1d4b8f7e0a1b2c3d4e5f60718",
+        "plugin_name": null,
+        "plugin_version": null,
+        "audit_rerun_iteration": 0,
+        "q_gate_pass_b_demoted": false
+      }
+    }
+  ]
+}

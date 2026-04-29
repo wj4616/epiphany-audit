@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fix Report Schema v1",
+  "$id": "fix-report-v1",
+  "type": "object",
+  "required": [
+    "schema_version", "fix_report_id", "partial", "halt_state",
+    "source_audit_report", "source_audit_report_sha256",
+    "source_report_id", "fix_run_timestamp", "branch", "flags",
+    "test_command_used", "audit_rerun_delta", "diff_scope_check",
+    "unmapped_hunks", "recovery_manifest_ref", "last_known_good_sha", "body"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "fix_report_id":  {"type": "string"},
+    "partial":        {"type": "boolean"},
+    "halt_state":     {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "source_audit_report":       {"type": "string"},
+    "source_audit_report_sha256":{"type": "string"},
+    "source_report_id":          {"type": "string"},
+    "fix_run_timestamp":         {"type": "string"},
+    "branch":                    {"type": "string"},
+    "flags": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["auto","confirm-all","verbose","deep","full-rerun","no-rerun","reverify-state"]},
+      "uniqueItems": true,
+      "not": {
+        "allOf": [
+          {"contains": {"const": "auto"}},
+          {"contains": {"const": "confirm-all"}}
+        ]
+      }
+    },
+    "test_command_used":  {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "baseline_metrics":   {"oneOf": [{"$ref": "#/definitions/metrics"}, {"type": "null"}]},
+    "post_metrics":       {"oneOf": [{"$ref": "#/definitions/post_metrics"}, {"type": "null"}]},
+    "audit_rerun_delta": {
+      "type": "object",
+      "required": ["scope"],
+      "properties": {
+        "scope":                   {"oneOf": [{"type": "string", "enum": ["full","narrow","skipped-tier-policy","skipped-by-flag"]}, {"type": "null"}]},
+        "reran_dimensions":        {"type": "array", "items": {"type": "string"}},
+        "resolved":                {"type": "array", "items": {"type": "string"}},
+        "fix_induced_regressions": {"type": "array", "items": {"type": "string"}},
+        "unchanged":               {"type": "array", "items": {"type": "string"}},
+        "new_findings_discovered": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "diff_scope_check": {"type": "string", "enum": ["pass","fail-with-unmapped-hunks","n/a"]},
+    "unmapped_hunks":   {"type": "array"},
+    "recovery_manifest_ref": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "last_known_good_sha":   {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "body": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/body_entry"}
+    }
+  },
+  "if":   {"properties": {"partial": {"const": true}}},
+  "then": {"properties": {"halt_state": {"not": {"type": "null"}}}},
+  "else": {"properties": {"halt_state": {"type": "null"}}},
+  "definitions": {
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "tests":      {"type": "object", "properties": {"passed": {"type": "integer"}, "failed": {"type": "integer"}, "skipped": {"type": "integer"}}},
+        "type_check": {"type": "object", "properties": {"errors": {"type": "integer"}}},
+        "lint":       {"type": "object", "properties": {"total_warnings": {"type": "integer"}}},
+        "build":      {"type": "string", "enum": ["pass","fail"]}
+      }
+    },
+    "post_metrics": {
+      "type": "object",
+      "properties": {
+        "tests":      {"type": "object"},
+        "type_check": {"type": "object"},
+        "lint":       {"type": "object", "properties": {"total_warnings": {"type": "integer"}, "new_warnings_in_changed_regions": {"type": "integer"}}},
+        "build":      {"type": "string", "enum": ["pass","fail"]}
+      }
+    },
+    "body_entry": {
+      "type": "object",
+      "required": ["id", "status", "tier", "verification_outcome"],
+      "properties": {
+        "id":                     {"type": "string"},
+        "status":                 {"type": "string", "enum": ["verified","failed","deferred","skipped","induced-regression","simulated"]},
+        "status_qualifier":       {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "status_qualifier_target":{"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "tier":                   {"type": "integer", "enum": [1, 2, 3]},
+        "tier_classification_reason": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "commit":                 {"oneOf": [{"type": "string"}, {"type": "null"}]},
+        "verification_outcome":   {"type": "string", "enum": ["pass","fail","n/a","simulated"]},
+        "failure_context":        {"type": "object"},
+        "defer_reason":           {"type": "string"},
+        "regression_test_added": {
+          "type": "object",
+          "properties": {
+            "status":   {"type": "string", "enum": ["yes","no","n/a"]},
+            "location": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+            "reason":   {"oneOf": [{"type": "string"}, {"type": "null"}]},
+            "deferred_to_followup_commit": {"oneOf": [{"type": "string"}, {"type": "null"}]}
+          }
+        },
+        "notes": {"oneOf": [{"type": "string"}, {"type": "null"}]}
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "juce-rt-safety",
+  "display_name": "JUCE Real-Time Audio Safety",
+  "version": "1.0.0",
+  "applies_to": {
+    "languages": ["cpp"],
+    "project_markers": ["CMakeLists.txt", "JUCE/", "*.vst3"]
+  },
+  "activation_triggers": [
+    {"type": "file_present", "path": "**/JuceHeader.h"},
+    {"type": "import_grep", "pattern": "AudioProcessor", "min_matches": 1}
+  ],
+  "exclusions": [
+    {"type": "project_size", "max_files": 1}
+  ],
+  "prompt_template": "Analyze the following code for JUCE real-time audio safety issues.\nLook for:\n- Allocations on the audio thread\n- Mutex locks on the audio thread\n- Blocking calls in processBlock\nReturn findings in Audit Report Schema v1 format.\n",
+  "kb_route_query": null,
+  "intra_node_token_budget": 30000,
+  "priority": "high"
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Graph Schema",
+  "$id": "graph-schema",
+  "type": "object",
+  "required": ["version", "nodes", "edges"],
+  "properties": {
+    "version": {"type": "string"},
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "type", "mode", "active_in", "inputs", "outputs", "aggregation_policy", "halt_conditions"],
+        "properties": {
+          "id":                 {"type": "string"},
+          "name":               {"type": "string"},
+          "type":               {"type": "string"},
+          "mode":               {"type": "string"},
+          "active_in":          {"type": "string"},
+          "inputs":             {"type": "array", "items": {"type": "string"}},
+          "outputs":            {"type": "array", "items": {"type": "string"}},
+          "aggregation_policy": {"type": "string"},
+          "halt_conditions":    {"type": "array", "items": {"type": "string"}},
+          "spawn_policy":       {"type": "string"},
+          "notes":              {"type": "string"}
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "channel", "cardinality", "activation"],
+        "properties": {
+          "id":          {"type": "string"},
+          "source":      {},
+          "target":      {},
+          "channel":     {"type": "string"},
+          "cardinality": {"type": "string"},
+          "activation":  {"type": "string"},
+          "notes":       {"type": "string"}
+        }
+      }
+    }
+  }
+}

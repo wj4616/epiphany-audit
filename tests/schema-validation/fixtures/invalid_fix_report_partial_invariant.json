@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "fix_report_id": "660e8400-e29b-41d4-a716-446655440001",
+  "partial": true,
+  "halt_state": null,
+  "source_audit_report": "/home/user/docs/epiphany/audit/myproject-20260427-100000.md",
+  "source_audit_report_sha256": "abc123def456",
+  "source_report_id": "550e8400-e29b-41d4-a716-446655440000",
+  "fix_run_timestamp": "2026-04-27T11:00:00Z",
+  "branch": "epiphany-audit/550e8400-20260427",
+  "flags": [],
+  "test_command_used": "pytest",
+  "baseline_metrics": null,
+  "post_metrics": null,
+  "audit_rerun_delta": {"scope": null, "reran_dimensions": [], "resolved": [], "fix_induced_regressions": [], "unchanged": [], "new_findings_discovered": []},
+  "diff_scope_check": "n/a",
+  "unmapped_hunks": [],
+  "recovery_manifest_ref": "/home/user/docs/epiphany/audit/.recovery/550e8400.json",
+  "last_known_good_sha": null,
+  "body": []
+}

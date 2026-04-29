@@ -1,0 +1,106 @@
+---
+schema_version: 1
+report_id: {{report_id}}
+audit_target: {{audit_target}}
+audit_timestamp: {{audit_timestamp}}
+tool_version: {{tool_version}}
+flags: {{flags}}
+language_summary: {{language_summary}}
+build_manifest: {{build_manifest}}
+test_command: {{test_command}}
+
+dimensions_activated: {{dimensions_activated}}
+dimensions_skipped:
+{{#dimensions_skipped}}
+  - dimension: {{dimension}}
+    reason: "{{reason}}"
+{{/dimensions_skipped}}
+
+{{#subtrees}}
+subtrees:
+{{#subtrees}}
+  - root: {{root}}
+    dimensions_activated: {{dimensions_activated}}
+    dimensions_skipped: {{dimensions_skipped}}
+{{/subtrees}}
+{{/subtrees}}
+subtree_grouping_applied: {{subtree_grouping_applied}}
+
+gap_dimensions_offered: {{gap_dimensions_offered}}
+gap_dimensions_auto_added: {{gap_dimensions_auto_added}}
+gap_dimensions_accepted: {{gap_dimensions_accepted}}
+
+token_cap_partial: {{token_cap_partial}}
+truncated_at_node: {{truncated_at_node}}
+improvement_report_ref: {{improvement_report_ref}}
+
+dimensions_partial: {{dimensions_partial}}
+
+q_gate:
+  pass_a: {{q_gate.pass_a}}
+  pass_b: {{q_gate.pass_b}}
+  pass_b_lens: {{q_gate.pass_b_lens}}
+  pass_b_skip_reason: {{q_gate.pass_b_skip_reason}}
+
+partial_report_warning: {{partial_report_warning}}
+---
+
+{{#partial_report_warning}}
+> **WARNING PARTIAL REPORT:** {{partial_report_warning}}
+
+{{/partial_report_warning}}
+## Resolve-Before-Testing
+
+{{#punch_list}}
+- **{{severity}}** `{{id}}` — {{summary}} (`{{location}}`)
+{{/punch_list}}
+
+---
+
+{{#findings}}
+## Finding {{id}}
+
+```yaml
+id: {{id}}
+location: {{location}}
+dimensions: {{dimensions}}
+severity: {{severity}}
+confidence: {{confidence}}
+evidence_excerpt: |
+{{evidence_excerpt}}
+evidence_excerpt_extended: {{evidence_excerpt_extended}}
+rationale: |
+  {{rationale}}
+remediation: |
+  {{remediation}}
+false_positive_check:
+  intentional:           { value: {{false_positive_check.intentional.value}}, justification: "{{false_positive_check.intentional.justification}}" }
+  file_symbol_verified:  { value: {{false_positive_check.file_symbol_verified.value}}, justification: "{{false_positive_check.file_symbol_verified.justification}}" }
+  reachable_from_entry:  { value: {{false_positive_check.reachable_from_entry.value}}, justification: "{{false_positive_check.reachable_from_entry.justification}}" }
+  fix_breaks_dependents: { value: {{false_positive_check.fix_breaks_dependents.value}}, justification: "{{false_positive_check.fix_breaks_dependents.justification}}" }
+effort: {{effort}}
+priority_score: {{priority_score}}
+verify_by: {{verify_by}}
+tests_present_signal: {{tests_present_signal}}
+provenance:
+  node: {{provenance.node}}
+  mode: {{provenance.mode}}
+  model: {{provenance.model}}
+  pass_b_model: {{provenance.pass_b_model}}
+  prompt_hash: {{provenance.prompt_hash}}
+  plugin_name: {{provenance.plugin_name}}
+  plugin_version: {{provenance.plugin_version}}
+  audit_rerun_iteration: {{provenance.audit_rerun_iteration}}
+  q_gate_pass_b_demoted: {{provenance.q_gate_pass_b_demoted}}
+```
+{{/findings}}
+
+---
+
+## Unverified Hypotheses
+
+*Findings demoted by FPV (false-positive verification). Not consumable by `--fix`.*
+
+{{#unverified_hypotheses}}
+- `{{id}}` `{{location}}` — {{notes}}
+{{/unverified_hypotheses}}
