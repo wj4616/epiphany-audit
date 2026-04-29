@@ -5,11 +5,8 @@ rendered in formats the template actually produces.
 Prevents silent breakage when the template field order changes relative to
 the harness regex (F006 — template-harness coupling).
 """
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                "tests", "determinism"))
+import os
 import re
-import tempfile
 import pytest
 
 
@@ -24,13 +21,6 @@ def _parse_actual_report_from_string(content: str):
         dims = [d.strip().strip("'\"") for d in block.group(2).split(",")]
         locations.append((loc, dims))
     return locations
-
-
-def _write_tmp(content: str):
-    f = tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False)
-    f.write(content)
-    f.close()
-    return f.name
 
 
 # --- bare YAML (no quotes) -------------------------------------------------
@@ -127,7 +117,7 @@ severity: HIGH
 def test_check_overlap_e2e_bare_yaml(tmp_path):
     """End-to-end: harness script scores >= 80% against python-small fixture
     when the report uses bare YAML dimension lists."""
-    import importlib.util, types
+    import importlib.util
     harness_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "tests", "determinism", "check_overlap.py"
@@ -152,13 +142,7 @@ severity: HIGH
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "tests", "determinism", "python-small"
     )
-    expected = mod.load_expected.__wrapped__(fixture_dir.replace("/python-small", ""), "python-small") \
-        if hasattr(mod.load_expected, "__wrapped__") else None
-
-    if expected is None:
-        import yaml
-        with open(os.path.join(fixture_dir, "expected_findings.yaml")) as f:
-            expected = yaml.safe_load(f)
+    expected = mod.load_expected("python-small")
 
     overlap = mod.check_overlap(actual, expected)
     assert overlap >= 0.8, f"overlap {overlap:.1%} < 80% — harness parse broken"
