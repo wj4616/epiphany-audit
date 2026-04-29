@@ -127,7 +127,7 @@ severity: HIGH
 def test_check_overlap_e2e_bare_yaml(tmp_path):
     """End-to-end: harness script scores >= 80% against python-small fixture
     when the report uses bare YAML dimension lists."""
-    import importlib.util, types
+    import importlib.util
     harness_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "tests", "determinism", "check_overlap.py"
@@ -152,13 +152,7 @@ severity: HIGH
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "tests", "determinism", "python-small"
     )
-    expected = mod.load_expected.__wrapped__(fixture_dir.replace("/python-small", ""), "python-small") \
-        if hasattr(mod.load_expected, "__wrapped__") else None
-
-    if expected is None:
-        import yaml
-        with open(os.path.join(fixture_dir, "expected_findings.yaml")) as f:
-            expected = yaml.safe_load(f)
+    expected = mod.load_expected("python-small")
 
     overlap = mod.check_overlap(actual, expected)
     assert overlap >= 0.8, f"overlap {overlap:.1%} < 80% — harness parse broken"
