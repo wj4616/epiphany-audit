@@ -16,11 +16,26 @@ resolved_flags: (from entry)
 
 ```
 fix_plan_doc: string        // Dry-Run Plan Schema v1 markdown
-user_approvals: {           // per tier; populated after interactive confirmation
+
+// user_approvals shape is per-input-type (v2.0.2 — F114 fix).
+// Discriminator: input_type from triage_result.
+//
+// When input_type == "code":
+user_approvals: TieredApprovals = {
   tier_1: "approved" | "declined",
   tier_2: "approved" | "declined",
   tier_3_per_fix: { [finding_id]: "approved" | "declined" }
 }
+//
+// When input_type != "code" (specification-document, plan-document, skill, prompt, ambiguous-text):
+user_approvals: NonCodeApprovals = {
+  low_risk:           "approved" | "declined",            // batch decision for low-risk findings
+  high_risk_per_fix:  { [finding_id]: "approved" | "declined" }   // per-finding for high-risk
+}
+//
+// N19's input contract (v2.0.2): N19 dispatches on input_type to the matching shape.
+// An implementation that receives the wrong shape MUST emit failure_class:
+// `verification-failure` with diagnostic "user_approvals shape mismatch with input_type".
 ```
 
 ## Side Effects
@@ -70,7 +85,7 @@ When `input_type` is not "code", the Tier Confirmation Protocol above is replace
 
 ## Token Budget
 
-Low (plan generation + interactive prompts).
+Moderate (~2-5k tokens; scales with fix-group count and per-type confirmation logic).
 
 ## Backtrack / Aggregation
 

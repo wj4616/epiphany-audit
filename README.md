@@ -1,4 +1,4 @@
-# epiphany-audit v2.0.0
+# epiphany-audit v2.0.3
 
 Multi-input-type graph-of-thought audit skill for Claude Code. Audits code,
 specification documents, plan documents, AI agent skills, and detailed prompts,

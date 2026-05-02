@@ -1,7 +1,7 @@
 # N06 — DimensionAnalyzer.PERFORMANCE
 
 **Type:** analyzer
-**Mode:** inline (default); subagent under `--deep`
+**Mode:** inline (default); subagent under `--deep` — subject to the **shared spawn cap** declared in `graph.json` `conventions.spawn_cap`: N04..N09 share ONE subagent slot, not one per analyzer.
 **Active in:** `audit`
 
 ## Inputs
@@ -44,7 +44,7 @@ Participant in BACKTRACKING via N10 (single re-emit cap).
 
 ## Fan-out Cardinality
 
-1:many findings → N10 via E05.
+1:1 → N10 via E05 (producing many findings; the fan-in is described by E05's multi-source topology).
 
 ## Back-edge Endpoints
 

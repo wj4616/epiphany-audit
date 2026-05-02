@@ -1,28 +1,29 @@
 ---
-schema_version: 1
+schema_version: 2
 name: security
 display_name: Security
 version: 1.0.0
 applies_to:
   languages: "*"
   project_markers: []
+  input_types: [code, specification-document, skill, prompt, ambiguous-text]
 activation_triggers:
   - type: import_grep
     pattern: "subprocess|exec|eval|os\\.system|request|sqlite|psycopg|http|jwt|auth|secret|password|token"
     min_matches: 1
 exclusions: []
 prompt_template: |
-  Analyze the following code for security vulnerabilities using sub-surface routing:
-  - SQL injection: string-interpolated queries, no parameterization
-  - Shell injection: user input passed to subprocess/exec/os.system without sanitization
-  - Auth/authz: missing authentication checks, broken access control
-  - Secrets in source: hardcoded credentials, API keys, private keys
-  - Deserialization: unsafe pickle/eval/yaml.load on untrusted input
-  - Prompt injection: LLM-facing code that concatenates user input directly into prompts
-  Only activate sub-surfaces where the project has the relevant component.
-  Emit skipped sub-surfaces with reason in the report.
+  Analyze the target for security vulnerabilities using sub-surface routing.
+  The input_type is {{input_type}}. Only activate sub-surfaces where the target
+  has the relevant component; emit skipped sub-surfaces with reason in the report.
+  - Code: SQL injection, shell injection, auth/authz gaps, hardcoded secrets,
+    unsafe deserialization, prompt injection in LLM-facing paths.
+  - Specification-document / Plan-document: undefined trust boundaries, missing
+    auth/data-handling requirements, unconstrained user-input surfaces.
+  - Skill / Prompt: prompt-injection surfaces in module contracts, missing
+    input sanitization in script interfaces, secrets in supporting code.
   For each finding, verify the file:line via Read before reporting.
-  Return findings conforming to Audit Report Schema v1.
+  Return findings conforming to Audit Report Schema v2.
 kb_route_query: null
 intra_node_token_budget: 30000
 priority: high

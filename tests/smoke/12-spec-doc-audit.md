@@ -15,8 +15,8 @@ Input type auto-detected as `specification-document`.
 
 **Expected outcomes:**
 - N00b classifies input as `specification-document` with confidence ≥0.6
-- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE, PERFORMANCE, SECURITY SUPPRESS
-- N03 B-FIND offers spec-specific gap dimensions (requirement-coverage, acceptance-criteria-completeness, ambiguity-detection)
+- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE C(a) CONDITIONAL (activate if ≥3 subsystems or inter-component contracts); PERFORMANCE SUPPRESS; SECURITY C(e) CONDITIONAL (activate if auth, data handling, or user-input boundaries defined)
+- N03 B-FIND offers spec-specific gap dimensions (REQUIREMENT-COMPLETENESS, CROSS-REFERENCE-INTEGRITY, ACCEPTANCE-CRITERIA-TESTABILITY, DOMAIN-CONSISTENCY)
 - Code-specific finding classes suppressed (off-by-one, null-dereference, race-condition, resource-leak, missing-error-handling, type-error)
 - Findings use document-level locations (heading paths or line numbers), not source-file paths
 - Every finding has the medical-diagnostic tetrad (presenting_symptom, underlying_cause, prognosis, confidence_interval)

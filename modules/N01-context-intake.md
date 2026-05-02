@@ -48,6 +48,12 @@ project_model: {
   has_rationale_sections?: boolean,
   embedded_code_block_count?: integer,
   spec_authoring_skill?: string | null,
+  // --- v2.0.1: predicate fields used by SKILL.md §7 conditions (a)/(e) ---
+  subsystem_count?: integer,                 // distinct top-level header roots; condition (a)
+  inter_component_contracts?: integer,       // count of "interface"/"API"/"contract" mentions
+  defines_auth?: boolean,                    // regex match for auth/jwt/session/oauth; condition (e)
+  defines_data_handling?: boolean,           // regex match for "data handling"/"data flow"/"PII"
+  defines_user_input_boundaries?: boolean,   // regex match for "user input"/"untrusted input"
 
   // --- plan-document-specific (when input_type == "plan-document") ---
   phase_count?: integer,
@@ -56,6 +62,8 @@ project_model: {
   dependency_graph?: { [phase_id: string]: string[] },
   task_list_count?: integer,
   has_rollback_procedure?: boolean,
+  // --- v2.0.1: predicate field used by SKILL.md §7 condition (b) ---
+  cross_phase_dependency_count?: integer,    // total edges in dependency_graph; condition (b)
 
   // --- skill-specific (when input_type == "skill") ---
   skill_name?: string,
@@ -65,6 +73,10 @@ project_model: {
   module_count?: integer,
   has_tests?: boolean,
   skill_language_summary?: { [lang]: integer },
+  // --- v2.0.1: predicate fields used by SKILL.md §7 conditions (c)/(d) ---
+  references_subagent_orchestration?: boolean,  // regex match for "subagent"/"Agent tool"; (c)
+  has_token_budgets?: boolean,                   // SKILL.md contains "token budget"; condition (d)
+  has_latency_constraints?: boolean,             // SKILL.md contains "latency"/"wall-clock"; (d)
 
   // --- prompt-specific (when input_type == "prompt") ---
   tag_topology?: { [tag_name: string]: integer },

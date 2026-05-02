@@ -10,9 +10,6 @@ REQUIRED_SECTIONS = [
 MODULE_FILES = sorted(glob.glob(os.path.join(SKILL, "modules/*.md")))
 
 
-def pytest_collection_modifyitems(items):
-    pass
-
 
 EXPECTED_NODE_COUNT = 29
 

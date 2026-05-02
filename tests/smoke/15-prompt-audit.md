@@ -15,9 +15,9 @@ Input type auto-detected as `prompt`.
 
 **Expected outcomes:**
 - N00b classifies input as `prompt` with confidence ≥0.6
-- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE, PERFORMANCE SUPPRESS; SECURITY CONDITIONAL
-- N03 B-FIND offers prompt-specific gap dimensions (delimiter-consistency, output-schema-completeness, role-boundary-clarity, tool-use-contract-alignment)
-- Certain code-level finding classes suppressed (off-by-one, race-condition, resource-leak, null-dereference) but type-error remains active
+- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE SUPPRESS; PERFORMANCE SUPPRESS; SECURITY ACTIVATE
+- N03 B-FIND offers prompt-specific gap dimensions (VERIFICATION-SCAFFOLDING, OUTPUT-SCHEMA-COMPLETENESS, TECHNIQUE-APPLICATION, CONSTRAINT-SATURATION)
+- Code-level finding classes suppressed (off-by-one, race-condition, resource-leak, null-dereference, missing-test-coverage); prompt-specific classes active (prompt-injection-surface, schema-drift, structural-contradiction, technique-application-inconsistency, output-format-underspecification)
 - Every finding has the medical-diagnostic tetrad
 - Audit report frontmatter: `input_type: prompt`
 - `--deep` semantics: prompt-graph traversal (trace tag nesting, role transitions, tool definitions)

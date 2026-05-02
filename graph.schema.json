@@ -5,7 +5,8 @@
   "type": "object",
   "required": ["version", "nodes", "edges"],
   "properties": {
-    "version": {"type": "string"},
+    "version":     {"type": "string"},
+    "conventions": {"type": "object"},
     "nodes": {
       "type": "array",
       "items": {
@@ -19,6 +20,7 @@
           "active_in":          {"type": "string"},
           "inputs":             {"type": "array", "items": {"type": "string"}},
           "outputs":            {"type": "array", "items": {"type": "string"}},
+          "outputs_note":       {"type": "string"},
           "aggregation_policy": {"type": "string"},
           "halt_conditions":    {"type": "array", "items": {"type": "string"}},
           "spawn_policy":       {"type": "string"},
@@ -30,12 +32,22 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "channel", "cardinality", "activation"],
+        "required": ["id", "source", "target", "channel", "cardinality", "activation"],
         "properties": {
           "id":          {"type": "string"},
-          "source":      {},
-          "target":      {},
-          "channel":     {"type": "string"},
+          "source": {
+            "oneOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
+            ]
+          },
+          "target": {
+            "oneOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
+            ]
+          },
+          "channel":     {"type": "string", "enum": ["data", "control", "feedback", "interactive"]},
           "cardinality": {"type": "string"},
           "activation":  {"type": "string"},
           "notes":       {"type": "string"}

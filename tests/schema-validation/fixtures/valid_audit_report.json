@@ -21,11 +21,11 @@
   "section_selector_confidence": {
     "input_type": "code",
     "dimensions": {
-      "CORRECTNESS": {"decision": "ACTIVATE", "reason": "floor dimension"},
-      "MAINTAINABILITY": {"decision": "ACTIVATE", "reason": "floor dimension"},
-      "ARCHITECTURE": {"decision": "SUPPRESS", "reason": "single-package project"},
-      "PERFORMANCE": {"decision": "SUPPRESS", "reason": "small project, no hot-path signals"},
-      "SECURITY": {"decision": "SUPPRESS", "reason": "no network/IO/DB/auth surfaces"}
+      "CORRECTNESS": {"status": "ACTIVATED", "reason": "floor dimension"},
+      "MAINTAINABILITY": {"status": "ACTIVATED", "reason": "floor dimension"},
+      "ARCHITECTURE": {"status": "SUPPRESSED", "reason": "single-package project"},
+      "PERFORMANCE": {"status": "SUPPRESSED", "reason": "small project, no hot-path signals"},
+      "SECURITY": {"status": "SUPPRESSED", "reason": "no network/IO/DB/auth surfaces"}
     },
     "finding_class_suppressions": [
       {"class": "missing-error-handling", "reason": "code input type — class active for code"}

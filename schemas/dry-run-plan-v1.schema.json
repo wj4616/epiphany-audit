@@ -10,7 +10,7 @@
     "simulated_branch", "body"
   ],
   "properties": {
-    "schema_version":            {"type": "integer", "const": 1},
+    "schema_version":            {"type": "integer", "const": 2},
     "plan_id":                   {"type": "string"},
     "source_audit_report":       {"type": "string"},
     "source_audit_report_sha256":{"type": "string"},

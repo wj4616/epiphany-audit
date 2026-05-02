@@ -119,39 +119,48 @@ def test_all_floor_dimensions_have_file_present_trigger():
 # --- v2.x Per-Type Activation Matrix Tests ---
 
 # Section-activation matrix: for each input type, some dimensions are ACTIVATE,
-# SUPPRESS, or CONDITIONAL (see SKILL.md §10).
+# SUPPRESS, or CONDITIONAL (see SKILL.md §7).
 # These tests validate the matrix rules as unit-testable invariants.
 
 SECTION_ACTIVATION = {
+    # Aligned with SKILL.md §7 (authoritative contract).
+    # Cells: A=ACTIVATE, S=SUPPRESS, C=CONDITIONAL (condition noted inline).
     "code": {
         "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
-        "ARCHITECTURE": "CONDITIONAL", "PERFORMANCE": "CONDITIONAL",
-        "SECURITY": "CONDITIONAL",
+        "ARCHITECTURE": "ACTIVATE", "PERFORMANCE": "ACTIVATE",
+        "SECURITY": "ACTIVATE",
     },
     "specification-document": {
         "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
-        "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
-        "SECURITY": "SUPPRESS",
+        # C(a): ACTIVATE if spec spans >=3 subsystems or defines inter-component contracts
+        "ARCHITECTURE": "CONDITIONAL", "PERFORMANCE": "SUPPRESS",
+        # C(e): ACTIVATE if spec defines auth, data handling, or user-input boundaries
+        "SECURITY": "CONDITIONAL",
     },
     "plan-document": {
         "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
-        "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
+        # C(b): ACTIVATE if plan has >=3 phases with cross-phase dependencies
+        "ARCHITECTURE": "CONDITIONAL", "PERFORMANCE": "SUPPRESS",
         "SECURITY": "SUPPRESS",
     },
     "skill": {
         "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
-        "ARCHITECTURE": "CONDITIONAL", "PERFORMANCE": "CONDITIONAL",
-        "SECURITY": "CONDITIONAL",
+        # C(c): ACTIVATE if skill has >=3 modules or references subagent orchestration
+        "ARCHITECTURE": "CONDITIONAL",
+        # C(d): ACTIVATE if SKILL.md specifies token budgets or latency constraints
+        "PERFORMANCE": "CONDITIONAL",
+        "SECURITY": "ACTIVATE",
     },
     "prompt": {
         "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
         "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
-        "SECURITY": "CONDITIONAL",
+        "SECURITY": "ACTIVATE",
     },
     "ambiguous-text": {
         "CORRECTNESS": "ACTIVATE", "MAINTAINABILITY": "ACTIVATE",
         "ARCHITECTURE": "SUPPRESS", "PERFORMANCE": "SUPPRESS",
-        "SECURITY": "SUPPRESS",
+        # C(f): ACTIVATE only universal-injection-surface checks; SUPPRESS lang-specific scans
+        "SECURITY": "CONDITIONAL",
     },
 }
 
@@ -196,30 +205,37 @@ def test_code_type_allows_all_dimensions():
 
 
 def test_spec_doc_suppresses_non_text_dims():
-    """Spec docs suppress ARCHITECTURE, PERFORMANCE, SECURITY."""
+    """Spec doc: PERFORMANCE is suppressed; ARCHITECTURE and SECURITY are CONDITIONAL."""
     spec = SECTION_ACTIVATION["specification-document"]
-    for dim in ("ARCHITECTURE", "PERFORMANCE", "SECURITY"):
-        assert spec[dim] == "SUPPRESS", (
-            f"specification-document: {dim} must be SUPPRESS, got {spec[dim]}"
+    assert spec["PERFORMANCE"] == "SUPPRESS"
+    for dim in ("ARCHITECTURE", "SECURITY"):
+        assert spec[dim] == "CONDITIONAL", (
+            f"specification-document: {dim} must be CONDITIONAL per SKILL.md §7, got {spec[dim]}"
         )
 
 
 def test_plan_doc_suppresses_non_text_dims():
-    """Plan docs suppress ARCHITECTURE, PERFORMANCE, SECURITY."""
+    """Plan doc: PERFORMANCE and SECURITY suppressed; ARCHITECTURE is CONDITIONAL (C(b))."""
     plan = SECTION_ACTIVATION["plan-document"]
-    for dim in ("ARCHITECTURE", "PERFORMANCE", "SECURITY"):
+    for dim in ("PERFORMANCE", "SECURITY"):
         assert plan[dim] == "SUPPRESS", (
             f"plan-document: {dim} must be SUPPRESS, got {plan[dim]}"
         )
+    assert plan["ARCHITECTURE"] == "CONDITIONAL", (
+        f"plan-document: ARCHITECTURE must be CONDITIONAL per SKILL.md §7 C(b), got {plan['ARCHITECTURE']}"
+    )
 
 
 def test_ambiguous_text_suppresses_all_non_floor():
-    """Ambiguous text suppresses all non-floor dimensions."""
+    """Ambiguous text: ARCHITECTURE and PERFORMANCE suppressed; SECURITY is CONDITIONAL (C(f))."""
     amb = SECTION_ACTIVATION["ambiguous-text"]
-    for dim in ("ARCHITECTURE", "PERFORMANCE", "SECURITY"):
+    for dim in ("ARCHITECTURE", "PERFORMANCE"):
         assert amb[dim] == "SUPPRESS", (
             f"ambiguous-text: {dim} must be SUPPRESS, got {amb[dim]}"
         )
+    assert amb["SECURITY"] == "CONDITIONAL", (
+        f"ambiguous-text: SECURITY must be CONDITIONAL per SKILL.md §7 C(f), got {amb['SECURITY']}"
+    )
 
 
 def test_spec_doc_suppresses_code_finding_classes():

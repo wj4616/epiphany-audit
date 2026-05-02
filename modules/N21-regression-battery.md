@@ -76,7 +76,7 @@ Adversarial-via-rerun.
 
 ## Fan-out Cardinality
 
-1 optional subagent spawn (full rerun under `--deep`).
+1:1 → N23 via E13f; internal: 1 optional subagent spawn (audit-rerun under --deep).
 
 ## Back-edge Endpoints
 

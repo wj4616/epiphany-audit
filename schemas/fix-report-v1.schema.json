@@ -11,7 +11,7 @@
     "unmapped_hunks", "recovery_manifest_ref", "last_known_good_sha", "body"
   ],
   "properties": {
-    "schema_version": {"type": "integer", "const": 1},
+    "schema_version": {"type": "integer", "const": 2},
     "fix_report_id":  {"type": "string"},
     "partial":        {"type": "boolean"},
     "halt_state":     {"oneOf": [{"type": "string"}, {"type": "null"}]},

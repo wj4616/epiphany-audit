@@ -7,7 +7,7 @@
 ## Inputs
 
 ```
-raw_project_context: (from N01)
+project_model: (from N01)
 ```
 
 ## Outputs
@@ -88,7 +88,7 @@ None. Single-pass gate.
 
 ## Fan-out Cardinality
 
-1:1 (routes to N00b on PASS, to user on FAIL).
+E00b: 1:1 → N00b (PASS); E00c: 1:1 → user (FAIL — non-auditability verdict).
 
 ## Back-edge Endpoints
 

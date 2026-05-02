@@ -50,7 +50,7 @@ Participant in BACKTRACKING: N10 FPV may re-emit one finding back to N04 with a 
 
 ## Fan-out Cardinality
 
-1:many findings → N10 via E05.
+1:1 → N10 via E05 (producing many findings; the fan-in is described by E05's multi-source topology).
 
 ## Back-edge Endpoints
 

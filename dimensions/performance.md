@@ -1,11 +1,12 @@
 ---
-schema_version: 1
+schema_version: 2
 name: performance
 display_name: Performance
 version: 1.0.0
 applies_to:
   languages: "*"
   project_markers: []
+  input_types: [code, skill]
 activation_triggers:
   - type: import_grep
     pattern: "for |while |\\.sort|\\.map|\\.filter|O\\("
@@ -14,16 +15,19 @@ exclusions:
   - type: project_size
     max_files: 3
 prompt_template: |
-  Analyze the following code for performance issues. Look for:
-  - Hot allocations: objects created on every iteration of a tight loop
-  - Algorithmic complexity blowups: O(n^2) or worse where O(n log n) is available
-  - Cache layout: data structures that thrash CPU cache (linked lists in hot paths)
-  - False sharing: adjacent mutable fields accessed from different threads
-  - Unnecessary repeated work: recomputing the same value inside a loop
+  Analyze the target for performance issues. The input_type is {{input_type}}.
+  Adapt analysis to the input kind:
+  - Code: hot allocations, algorithmic complexity blowups (O(n^2) or worse where
+    O(n log n) is available), cache-hostile data structures, false sharing,
+    unnecessary repeated work inside loops.
+  - Skill: token-budget overruns, subagent dispatch latency, module loading overhead,
+    prompt-template size affecting cache-hit rate.
+  - Other types: structural inefficiencies (redundant passes, oversized sections,
+    unnecessary cross-references that slow comprehension or tooling).
   Only report issues with a concrete, measurable performance impact.
   Tag speculative findings (no profiling evidence) with confidence: LOW.
   For each finding, verify the file:line via Read before reporting.
-  Return findings conforming to Audit Report Schema v1.
+  Return findings conforming to Audit Report Schema v2.
 kb_route_query: null
 intra_node_token_budget: 30000
 priority: medium

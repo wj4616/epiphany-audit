@@ -7,7 +7,7 @@
 ## Inputs
 
 ```
-raw_project_context: (from N01)
+project_model: (from N01)
 prerequisite_gate_result: (from N00a, guaranteed "PASS" by E00b activation)
 ```
 
@@ -129,7 +129,7 @@ None. Single-pass classifier.
 
 ## Fan-out Cardinality
 
-1:2 — feedback edge E00d to N01 (sets `input_type` on project_model), forward edge E00e to N02 (routes with classified type).
+1:3 (v2.0.2) — feedback edge E00d to N01 (sets `input_type` on project_model), forward edge E00e to N02 (routes with classified type), and forward edge E_trace_detector to N14 (carries `detector_confidence_trace` for Pass A check #9 frontmatter coherence).
 
 ## Back-edge Endpoints
 

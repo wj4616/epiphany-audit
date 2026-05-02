@@ -1,7 +1,7 @@
 # N09 — DimensionAnalyzer.<X> (plugin-instantiated)
 
 **Type:** analyzer
-**Mode:** inline (default); subagent under `--deep`
+**Mode:** inline (default); subagent under `--deep` — subject to the **shared spawn cap** declared in `graph.json` `conventions.spawn_cap`: N04..N09 share ONE subagent slot, not one per analyzer (this includes ALL plugin-instantiated N09 instances combined).
 **Active in:** `audit`
 
 **Note:** N09 is a template module. At runtime, R-ROUTE instantiates concrete nodes
@@ -46,7 +46,7 @@ Participant in BACKTRACKING via N10 (single re-emit cap per plugin instance).
 
 ## Fan-out Cardinality
 
-1:many findings per plugin instance → N10 via E05.
+1:1 per plugin instance → N10 via E05 (producing many findings; the fan-in is described by E05's multi-source topology).
 
 ## Back-edge Endpoints
 

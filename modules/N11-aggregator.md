@@ -40,7 +40,7 @@ AGGREGATION owner (audit side).
 
 ## Fan-out Cardinality
 
-N:1 (fan-in from multiple findings; emits smaller deduplicated set).
+1:1 → N12 via E08.
 
 ## Back-edge Endpoints
 

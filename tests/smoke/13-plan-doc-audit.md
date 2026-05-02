@@ -15,8 +15,8 @@ Input type auto-detected as `plan-document`.
 
 **Expected outcomes:**
 - N00b classifies input as `plan-document` with confidence ≥0.6
-- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE, PERFORMANCE, SECURITY SUPPRESS
-- N03 B-FIND offers plan-specific gap dimensions (phase-dependency-completeness, checkpoint-verifiability, task-granularity, rollback-strategy)
+- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE C(b) CONDITIONAL (activate if ≥3 phases with cross-phase dependencies); PERFORMANCE SUPPRESS; SECURITY SUPPRESS
+- N03 B-FIND offers plan-specific gap dimensions (RISK-ASSESSMENT, ROLLBACK-PROCEDURE, DEPENDENCY-TRACEABILITY, ESTIMATE-CALIBRATION)
 - Code-specific finding classes suppressed
 - No code-level finding classes emitted (no off-by-one, null-dereference, race-condition, resource-leak)
 - Every finding has the medical-diagnostic tetrad

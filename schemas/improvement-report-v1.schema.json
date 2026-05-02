@@ -5,15 +5,17 @@
   "type": "object",
   "required": [
     "schema_version", "improvement_report_id", "source_audit_report",
-    "source_report_id", "audit_target", "improvement_timestamp",
+    "source_audit_report_sha256", "source_report_id",
+    "audit_target", "improvement_timestamp",
     "tool_version", "flags", "improvement_partial",
     "total_candidates", "filtered_out", "survivors",
     "notable", "quick_wins", "worthwhile", "body"
   ],
   "properties": {
-    "schema_version":        {"type": "integer", "const": 1},
+    "schema_version":        {"type": "integer", "const": 2},
     "improvement_report_id": {"type": "string"},
     "source_audit_report":   {"type": "string"},
+    "source_audit_report_sha256": {"type": "string"},
     "source_report_id":      {"type": "string"},
     "audit_target":          {"type": "string"},
     "improvement_timestamp": {"type": "string"},

@@ -3,6 +3,7 @@
   "title": "Audit Report Schema v1",
   "$id": "audit-report-v1",
   "type": "object",
+  "additionalProperties": false,
   "required": [
     "schema_version", "report_id", "audit_target", "audit_timestamp",
     "tool_version", "flags", "input_type", "project_content_sha256",
@@ -11,7 +12,7 @@
     "q_gate", "findings"
   ],
   "properties": {
-    "schema_version": {"type": "integer", "const": 1},
+    "schema_version": {"type": "integer", "const": 2},
     "report_id":      {"type": "string"},
     "audit_target":   {"type": "string"},
     "audit_timestamp":{"type": "string"},
@@ -44,9 +45,24 @@
         "classified_type": {"type": "string"},
         "confidence":       {"type": "string", "enum": ["high","marginal","ambiguous"]},
         "primary_score":    {"type": "number"},
-        "runner_up_type":   {"type": "string"},
+        "runner_up_type":   {"oneOf": [{"type": "string"}, {"type": "null"}]},
         "runner_up_score":  {"type": "number"},
-        "fingerprints_observed": {"type": "array"},
+        "fingerprints_observed": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"type": "string"},
+              {"type": "object",
+               "required": ["fingerprint", "matched", "weight"],
+               "properties": {
+                 "fingerprint": {"type": "string"},
+                 "matched":     {"type": "boolean"},
+                 "weight":      {"type": "number"},
+                 "negative":    {"type": "boolean"}
+               }}
+            ]
+          }
+        },
         "multi_type":       {"type": "boolean"},
         "secondary_types":  {"type": "array", "items": {"type": "string"}},
         "ambiguous_reason": {"oneOf": [{"type": "string"}, {"type": "null"}]}
@@ -57,8 +73,18 @@
       "required": ["input_type", "dimensions"],
       "properties": {
         "input_type": {"type": "string"},
-        "dimensions": {"type": "object"},
-        "finding_class_suppressions": {"type": "array"},
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["status", "reason"],
+            "properties": {
+              "status": {"type": "string", "enum": ["ACTIVATED", "SUPPRESSED"]},
+              "reason": {"type": "string"}
+            }
+          }
+        },
+        "finding_class_suppressions": {"type": "array", "items": {"oneOf": [{"type": "string"}, {"type": "object", "required": ["class", "reason"], "properties": {"class": {"type": "string"}, "reason": {"type": "string"}}}]}},
         "multi_type_union": {"type": "object"}
       }
     },
@@ -104,8 +130,49 @@
     "gap_dimensions_auto_added":{"type": "array", "items": {"type": "string"}},
     "gap_dimensions_accepted":  {"type": "array", "items": {"type": "string"}},
     "token_cap_partial":        {"type": "boolean"},
+    "tetrad_completeness": {
+      "type": "object",
+      "required": ["total_findings", "tetrad_complete", "incomplete_ids"],
+      "properties": {
+        "total_findings":  {"type": "integer", "minimum": 0},
+        "tetrad_complete": {"type": "integer", "minimum": 0},
+        "incomplete_ids":  {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "two_axis_scores": {
+      "type": "object",
+      "required": ["creativity", "functional_correctness"],
+      "properties": {
+        "creativity":             {"type": "number", "minimum": 0, "maximum": 10},
+        "functional_correctness": {"type": "number", "minimum": 0, "maximum": 10}
+      }
+    },
+    "falsifiability_survival_log": {
+      "type": "object",
+      "required": ["survived", "downgraded", "dropped"],
+      "properties": {
+        "survived":   {"type": "integer", "minimum": 0},
+        "downgraded": {"type": "integer", "minimum": 0},
+        "dropped":    {"type": "integer", "minimum": 0}
+      }
+    },
     "truncated_at_node": {"oneOf": [{"type": "string", "pattern": "^N[0-9]+"}, {"type": "null"}]},
     "improvement_report_ref": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "two_axis_scores_overridden_by_user": {"type": "boolean"},
+    "plan_metadata": {
+      "type": "object",
+      "description": "Optional structured metadata for plan-document input type; populated by N01 + N13 when input_type == 'plan-document'.",
+      "properties": {
+        "phase_count": {"type": "integer", "minimum": 0},
+        "phase_ids":   {"type": "array", "items": {"type": "string"}},
+        "dependency_graph": {
+          "type": "object",
+          "additionalProperties": {"type": "array", "items": {"type": "string"}}
+        },
+        "has_rollback_procedure": {"type": "boolean"},
+        "cross_phase_dependency_count": {"type": "integer", "minimum": 0}
+      }
+    },
     "dimensions_partial": {
       "type": "array",
       "items": {
@@ -144,7 +211,7 @@
         "presenting_symptom", "underlying_cause", "prognosis", "confidence_interval"
       ],
       "properties": {
-        "id":          {"type": "string", "pattern": "^F[0-9]{3,}$"},
+        "id":          {"type": "string", "pattern": "^F(new[0-9]{3,}|[0-9]{3,})$"},
         "location":    {"type": "string"},
         "dimensions":  {"type": "array", "items": {"type": "string"}, "minItems": 1},
         "severity":    {"type": "string", "enum": ["CRITICAL","HIGH","MEDIUM","LOW","INFO"]},

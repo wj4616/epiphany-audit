@@ -16,8 +16,8 @@ Input type auto-detected as `skill`.
 **Expected outcomes:**
 - N00b classifies input as `skill` with confidence ≥0.6
 - N01 project_model includes skill-specific fields: `skill_name` (from SKILL.md frontmatter), `module_count`, `schema_count`
-- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE, PERFORMANCE, SECURITY CONDITIONAL
-- N03 B-FIND offers skill-specific gap dimensions (module-contract-completeness, cross-reference-integrity, schema-consistency, halt-state-coverage)
+- N02 section-activation matrix: CORRECTNESS + MAINTAINABILITY ACTIVATE; ARCHITECTURE C(c) CONDITIONAL (activate if ≥3 modules or subagent orchestration); PERFORMANCE C(d) CONDITIONAL (activate if token budgets or latency constraints specified); SECURITY ACTIVATE
+- N03 B-FIND offers skill-specific gap dimensions (MODULE-COHERENCE, TOKEN-BUDGET-COMPLIANCE, KB-QUERY-FRESHNESS, SKILL-REGISTRATION-CONSISTENCY)
 - Findings may span multiple files (SKILL.md + individual modules)
 - Every finding has the medical-diagnostic tetrad
 - Audit report frontmatter: `input_type: skill`

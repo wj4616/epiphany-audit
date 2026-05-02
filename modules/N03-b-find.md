@@ -101,7 +101,7 @@ None.
 
 ## Fan-out Cardinality
 
-1:N (feeds N04..N09 via updated activation map, then E03).
+1:N → N04..N09 via E03; 1:1 → user via E04 (interactive gap-dimension prompts, --deep only).
 
 ## Back-edge Endpoints
 

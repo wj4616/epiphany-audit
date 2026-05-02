@@ -9,7 +9,8 @@
 ```
 project_model: (from N01, now includes input_type set by N00b)
 dimension_plugins: Plugin[]  // loaded at N02 startup from:
-                             // (1) ~/.claude/skills/epiphany-audit/dimensions/*.md
+                             // (1) <skill_dir>/dimensions/*.md  (resolves at runtime to
+                             //     ~/.claude/skills/epiphany-audit-v2/dimensions/*.md)
                              // (2) ~/.config/epiphany-audit/dimensions/*.md
 resolved_flags: (from N01)
 input_type: string           // consumed from project_model;
@@ -26,11 +27,13 @@ dimension_activation_map: {
 subtrees_activation_maps: SubtreeActivationMap[]  // only for monorepos
 plugin_registry: Plugin[]          // validated, ordered
 kb_prefetch_results: { [dim]: string }  // for plugins with kb_route_query
+file_subset: string[]              // files scoped to activated dimensions;
+                                   // derived from dimension_activation_map at end of R-ROUTE
 ```
 
 ## Side Effects
 
-- Read: `~/.claude/skills/epiphany-audit/dimensions/*.md`
+- Read: `<skill_dir>/dimensions/*.md` — at runtime resolves to `~/.claude/skills/epiphany-audit-v2/dimensions/*.md`
 - Read: `~/.config/epiphany-audit/dimensions/*.md` (if exists)
 - Write-log: one structured event per plugin load attempt (success / validation-fail / shadowed / rejected)
 
@@ -146,11 +149,30 @@ When the detector reports 2+ types above 0.4 confidence:
 
 ## Loading and Shadow Rules
 
-1. Bundled plugins: `~/.claude/skills/epiphany-audit/dimensions/*.md`
+1. Bundled plugins: `<skill_dir>/dimensions/*.md` — at runtime resolves to `~/.claude/skills/epiphany-audit-v2/dimensions/*.md`. Implementations MUST use `<skill_dir>`-relative resolution (e.g., `__file__`-relative in Python harnesses) and MUST NOT hardcode the v1 path `~/.claude/skills/epiphany-audit/`.
 2. User plugins: `~/.config/epiphany-audit/dimensions/*.md` (loaded after; may shadow by `name`)
 3. User plugin with same `name` as bundled → shadows bundled entirely (no merge)
 4. CORRECTNESS and MAINTAINABILITY cannot be shadowed (warning emitted, user plugin rejected)
 5. Alphabetical wins between two user plugins sharing a name
+
+## Activation Resolution Order (v2.0.1)
+
+Two activation gates exist: the plugin's `applies_to.input_types` field and the SKILL.md §7 section-activation matrix. They compose by AND-with-conditional-evaluation, in this strict order:
+
+1. **Floor invariant**: CORRECTNESS and MAINTAINABILITY → ACTIVATED for every input type, regardless of plugin or matrix. They cannot be suppressed at any layer.
+2. **Plugin-scope gate**: for each non-floor dimension, check `applies_to.input_types` (default `[code]` if absent). If `input_type` is NOT in the plugin's set → SUPPRESSED with reason `"plugin scope (applies_to.input_types) excludes <input_type>"`.
+3. **Matrix gate**: if the plugin admits the input type, look up the cell in §7's matrix:
+   - `A` → ACTIVATED
+   - `S` → SUPPRESSED with reason quoting the matrix cell
+   - `C` → evaluate the predicate (a)–(f); ACTIVATED if true, SUPPRESSED if false (with the predicate's failure quoted as reason)
+4. **Multi-type union override**: if the detector reported `multi_type: true` (≥2 input types above 0.4 confidence), apply §11's UNION rule — any S → A if any detected type says A for that dimension. SUPPRESSION-OVERRIDE applies to finding classes only (per §8), not to dimension activation.
+
+**Worked example:** input is `skill`, plugin is performance.md (applies_to.input_types: [code, skill]):
+- Floor: not floor — proceed.
+- Plugin gate: `skill ∈ [code, skill]` → admitted.
+- Matrix: PERFORMANCE on SKILL = `C(d)` — evaluate "SKILL.md specifies token budgets or latency constraints". If true → ACTIVATED; if false → SUPPRESSED.
+
+This ordering is deterministic and debuggable. The `section_selector_confidence` trace records the first gate that suppressed each dimension.
 
 ## Activation Trigger Logic (per plugin)
 
@@ -170,7 +192,7 @@ None. Produces activation map consumed by N03 and N04..N09.
 
 ## Fan-out Cardinality
 
-1:1 → N03 (E02); 1:N → N04..N09 per activation map (E03).
+1:2 (v2.0.2) — primary 1:1 → N03 (E02; carries dimension_activation_map for B-FIND), and side-channel 1:1 → N14 (E_trace_section; carries `section_selector_confidence` for Pass A check #9 frontmatter coherence). The 1:N fan-out to N04..N09 happens downstream via N03's E03 edge, which consumes the dimension_activation_map produced here.
 
 ## Back-edge Endpoints
 

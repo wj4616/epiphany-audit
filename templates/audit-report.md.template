@@ -54,6 +54,21 @@ q_gate:
   pass_b_lens: {{q_gate.pass_b_lens}}
   pass_b_skip_reason: {{q_gate.pass_b_skip_reason}}
 
+tetrad_completeness:
+  total_findings: {{tetrad_completeness.total_findings}}
+  tetrad_complete: {{tetrad_completeness.tetrad_complete}}
+  incomplete_ids: {{tetrad_completeness.incomplete_ids}}
+
+two_axis_scores:
+  creativity: {{two_axis_scores.creativity}}
+  functional_correctness: {{two_axis_scores.functional_correctness}}
+two_axis_scores_overridden_by_user: {{two_axis_scores_overridden_by_user}}
+
+falsifiability_survival_log:
+  survived: {{falsifiability_survival_log.survived}}
+  downgraded: {{falsifiability_survival_log.downgraded}}
+  dropped: {{falsifiability_survival_log.dropped}}
+
 partial_report_warning: {{partial_report_warning}}
 ---
 

@@ -1,5 +1,12 @@
 {
-  "version": "2.0.0",
+  "version": "2.0.3",
+  "conventions": {
+    "resolved_flags_propagation": "resolved_flags is captured by N01 from CLI args and included in the compound project_model. Because project_model flows to all downstream nodes via data edges (E00a, E01, E03, etc.), resolved_flags is implicitly available to every node without being declared as a discrete input in graph.json. Modules that consume resolved_flags SHOULD list it in their ## Inputs section for clarity, even though the graph layer does not model it as a separate edge payload. The authoritative declaration is in N01 outputs (project_model contains resolved_flags) plus the convention stated here.",
+    "input_type_propagation": "input_type is produced exclusively by N00b InputTypeDetector. It is NOT a direct N01 output (N01 emits project_model with input_type=null). After N00b classifies, the value is written back to N01's project_model via feedback edge E00d, and N01 enriches the model with type-specific fields (heading_hierarchy, phase_count, skill_name, etc.) before downstream consumption. From E01 onward, project_model carries input_type. Edge E00e from N00b → N02 is a CLARITY/CONFIRMATION channel — it documents that N02 conceptually depends on N00b's classification, even though the same payload also reaches N02 via E01 after N01 enrichment. Removing E00e would not change runtime behavior; it is preserved for graph readability.",
+    "spawn_cap": "Under --deep, the dimension analyzer batch (N04..N09) shares ONE subagent slot — not one slot per analyzer. Total subagent ceiling: ≤3 under --deep (dim-batch:1 + N14-PassB:1 + N21-rerun:1); ≤4 under --deep + --improve (+ N25-phase2:1). SKILL.md §14 '≤3 spawn budget (≤4 with --improve)' refers to this TOTAL ceiling, not just the analyzer batch. Implementations MUST enforce the total ceiling; emitting more than one concurrent subagent across N04..N09 is a contract violation regardless.",
+    "halt_condition_naming": "All halt IDs MUST start with 'halt-'. Pattern: halt-<timing>-<condition> where timing is: 'on' (immediate/reactive to a specific event), 'pre' (before a phase or pipeline entry), 'mid' (during active processing), or a surface classifier ('suspicious', 'ambiguous', 'no'). Regex to match all valid forms: ^halt-(on|pre|mid|suspicious|ambiguous|no)-. Examples: halt-on-flag-conflict, halt-pre-audit, halt-mid-fix-on-perfix-cap-hit, halt-suspicious-target, halt-ambiguous-target.",
+    "plugin_path_resolution": "Bundled dimension plugins live at <skill_dir>/dimensions/*.md, where <skill_dir> resolves at runtime to the directory containing this graph.json (i.e., ~/.claude/skills/epiphany-audit-v2/). Implementations MUST use file-relative resolution (e.g., __file__-relative in Python) and MUST NOT hardcode the v1 path ~/.claude/skills/epiphany-audit/."
+  },
   "nodes": [
     {
       "id": "N01",
@@ -8,12 +15,14 @@
       "mode": "inline",
       "active_in": "audit",
       "inputs": ["cli_args", "cwd", "env"],
-      "outputs": ["project_model", "resolved_flags", "input_type"],
+      "outputs": ["project_model", "resolved_flags"],
+      "outputs_note": "project_model.input_type is initially null; it is set by N00b via feedback edge E00d, after which N01 enriches project_model with type-specific fields. See conventions.input_type_propagation.",
       "aggregation_policy": "n/a",
       "halt_conditions": [
         "halt-pre-audit", "halt-suspicious-target",
         "halt-ambiguous-target", "halt-on-flag-conflict",
-        "halt-on-flag-rejection", "halt-no-source-detected"
+        "halt-on-flag-rejection", "halt-no-source-detected",
+        "halt-on-target-conflict"
       ]
     },
     {
@@ -25,7 +34,7 @@
       "inputs": ["project_model"],
       "outputs": ["prerequisite_gate_result"],
       "aggregation_policy": "n/a",
-      "halt_conditions": ["halt-on-non-auditable-input"]
+      "halt_conditions": []
     },
     {
       "id": "N00b",
@@ -34,7 +43,7 @@
       "mode": "inline",
       "active_in": "audit",
       "inputs": ["project_model"],
-      "outputs": ["detector_result", "input_type"],
+      "outputs": ["detector_confidence_trace", "input_type"],
       "aggregation_policy": "n/a",
       "halt_conditions": []
     },
@@ -44,8 +53,8 @@
       "type": "router",
       "mode": "inline",
       "active_in": "audit",
-      "inputs": ["project_model", "dimension_plugins_from_disk", "input_type"],
-      "outputs": ["dimension_activation_map", "plugin_registry"],
+      "inputs": ["project_model", "dimension_plugins", "input_type"],
+      "outputs": ["dimension_activation_map", "plugin_registry", "file_subset"],
       "aggregation_policy": "n/a",
       "halt_conditions": ["halt-on-floor-plugin-missing"]
     },
@@ -58,7 +67,7 @@
       "inputs": ["project_model", "dimension_activation_map"],
       "outputs": ["updated_dimension_activation_map", "gap_dimensions_offered", "gap_dimensions_auto_added"],
       "aggregation_policy": "n/a",
-      "halt_conditions": []
+      "halt_conditions": ["halt-on-user-abort"]
     },
     {
       "id": "N04",
@@ -133,10 +142,11 @@
       "type": "verifier",
       "mode": "inline",
       "active_in": "audit",
-      "inputs": ["raw_findings from N04..N09"],
-      "outputs": ["verified_findings", "location_verification_cache"],
-      "aggregation_policy": "BACKTRACKING owner (single re-emit cap on N04..N09)",
-      "halt_conditions": []
+      "inputs": ["raw_findings from N04..N09", "project_model", "resolved_flags"],
+      "outputs": ["verified_findings", "location_verification_cache", "falsifiability_survival_log"],
+      "aggregation_policy": "BACKTRACKING owner (single re-emit cap on N04..N09); AGGREGATION owner of falsifiability_survival_log (v2.0.1)",
+      "halt_conditions": [],
+      "notes": "v2.0.1: falsifiability counter-argument generation (severity ≥ MEDIUM) moved here from N13 — N10 already has source-file Read access for location verification. N13 only renders the resulting falsifiability block."
     },
     {
       "id": "N11",
@@ -178,12 +188,12 @@
       "type": "verifier",
       "mode": "inline (Pass A) + conditional subagent (Pass B)",
       "active_in": "audit",
-      "inputs": ["formatted_report_markdown", "location_verification_cache"],
-      "outputs": ["q_gate_result", "validated_report"],
+      "inputs": ["formatted_report_markdown", "location_verification_cache", "detector_confidence_trace", "section_selector_confidence", "falsifiability_survival_log"],
+      "outputs": ["q_gate_result", "validated_report", "tetrad_completeness", "two_axis_scores", "two_axis_scores_overridden_by_user"],
       "aggregation_policy": "adversarial self-review",
       "halt_conditions": ["halt-on-q-gate-failure"],
       "spawn_policy": "Pass B spawns when: >=5 findings OR any CRITICAL/HIGH severity OR --deep flag",
-      "notes": "v2.x: Pass A check #2 verifies tetrad-completeness on every finding"
+      "notes": "v2.x: Pass A check #2 verifies tetrad-completeness; Pass A check #8 enforces two-axis hard gate (creativity >=7, functional_correctness >=7); Pass A check #9 enforces frontmatter-trace coherence. Halt subreasons: pass-a, pass-b, pass-b-exec-error, two-axis-below-threshold, frontmatter-trace-incoherence."
     },
     {
       "id": "N15",
@@ -210,7 +220,10 @@
         "halt-pre-fix-on-validator-failure", "halt-on-empty-or-unfixable-report",
         "halt-on-conflicting-fixes", "halt-on-files-outside-tree",
         "halt-on-invalid-finding-id", "halt-on-resume-tree-divergence",
-        "halt-on-stale-source-report", "halt-on-mismatched-version"
+        "halt-on-stale-source-report", "halt-on-mismatched-version",
+        "halt-on-user-abort", "halt-on-ambiguous-fix-report",
+        "halt-on-unresolvable-fix-report", "halt-on-no-audit-report",
+        "halt-on-recovery-conflict"
       ]
     },
     {
@@ -255,7 +268,7 @@
       "type": "verifier",
       "mode": "inline",
       "active_in": "fix",
-      "inputs": ["changed_files", "baseline_metrics"],
+      "inputs": ["changed_files", "baseline_metrics", "test_cmd", "input_type"],
       "outputs": ["verify_result", "failure_context"],
       "aggregation_policy": "emits fail-signal; routing is E_repair's responsibility",
       "halt_conditions": []
@@ -280,7 +293,7 @@
       "mode": "inline",
       "active_in": "fix",
       "inputs": ["e_repair_cap_hit_signal_or_e_finalize_signal", "fix_report_id_on_finalize"],
-      "outputs": ["recovery_manifest_finalized", "archive_path_on_completion"],
+      "outputs": ["recovery_manifest_finalized", "archive_path"],
       "aggregation_policy": "n/a",
       "halt_conditions": []
     },
@@ -349,7 +362,7 @@
     {"id": "E00e",         "source": "N00b", "target": "N02",             "channel": "data",        "cardinality": "1:1",  "activation": "always (post-E00d); classified input_type → N02 relevance router"},
     {"id": "E01",          "source": "N01", "target": "N02",              "channel": "data",        "cardinality": "1:1",  "activation": "always"},
     {"id": "E02",          "source": "N02", "target": "N03",              "channel": "data",        "cardinality": "1:1",  "activation": "always"},
-    {"id": "E03",          "source": "N02", "target": ["N04","N05","N06","N07","N08","N09"], "channel": "control", "cardinality": "1:N",  "activation": "per activation map; floor (CORRECTNESS, MAINTAINABILITY) always emits"},
+    {"id": "E03",          "source": "N03", "target": ["N04","N05","N06","N07","N08","N09"], "channel": "control", "cardinality": "1:N",  "activation": "per updated activation map post-BFIND; floor (CORRECTNESS, MAINTAINABILITY) always emits"},
     {"id": "E04",          "source": "N03", "target": "user",             "channel": "interactive", "cardinality": "1:1",  "activation": "only under --deep; default mode auto-adds HIGH-confidence gaps without prompting"},
     {"id": "E05",          "source": ["N04","N05","N06","N07","N08","N09"], "target": "N10", "channel": "data", "cardinality": "fan-in", "activation": "always"},
     {"id": "E06",          "source": "N10", "target": ["N04","N05","N06","N07","N08","N09"], "channel": "feedback", "cardinality": "refinement", "activation": "BACKTRACKING — single-attempt cap on re-emit"},
@@ -359,7 +372,12 @@
     {"id": "E10",          "source": "N13", "target": "N14",             "channel": "control",     "cardinality": "1:1",  "activation": "always"},
     {"id": "E11",          "source": "N14", "target": "N15",             "channel": "data",        "cardinality": "1:1",  "activation": "Pass A succeeds AND (Pass B succeeds OR skipped-low-volume); Pass B exec-error -> halt"},
     {"id": "E12",          "source": "N15", "target": "user",            "channel": "interactive", "cardinality": "1:1",  "activation": "save? prompt after N15 save-decision resolves"},
-    {"id": "E13",          "source": "N16", "target": ["N17","N18","N19","N20","N21","N23"], "channel": "data", "cardinality": "1:1 each", "activation": "fix pipeline chain; entry from --fix or post-E21 fix-offer consent", "notes": "sequential chain N17->N18->N19->N20->N21->N23; array lists all downstream nodes reachable via this entry edge, not simultaneous fan-out"},
+    {"id": "E13a",         "source": "N16", "target": "N17",              "channel": "data",        "cardinality": "1:1",  "activation": "fix pipeline entry from --fix or post-E21 fix-offer consent"},
+    {"id": "E13b",         "source": "N17", "target": "N18",              "channel": "data",        "cardinality": "1:1",  "activation": "always within fix pipeline"},
+    {"id": "E13c",         "source": "N18", "target": "N19",              "channel": "data",        "cardinality": "1:1",  "activation": "always within fix pipeline"},
+    {"id": "E13d",         "source": "N19", "target": "N20",              "channel": "data",        "cardinality": "1:1",  "activation": "on per-fix-group complete"},
+    {"id": "E13e",         "source": "N20", "target": "N21",              "channel": "data",        "cardinality": "1:1",  "activation": "on PerFixVerify success -> regression battery"},
+    {"id": "E13f",         "source": "N21", "target": "N23",              "channel": "data",        "cardinality": "1:1",  "activation": "on battery complete"},
     {"id": "E14",          "source": "E_repair cap-hit", "target": "N22", "channel": "control",   "cardinality": "1:1",  "activation": "E_repair 3rd invocation (cap-hit) -> N22 finalizes recovery manifest for failed fix-group"},
     {"id": "E_halt_partial","source": "halt-mid-fix-*", "target": ["N23","user"], "channel": "control", "cardinality": "1:1", "activation": "perfix-cap-hit or induced-regression-cap-hit AND every remaining group blocked"},
     {"id": "E15",          "source": "N20", "target": "N19",            "channel": "feedback",    "cardinality": "1:1",  "activation": "on PerFixVerify success -> next fix-group"},
@@ -373,6 +391,9 @@
     {"id": "E18",          "source": "N25", "target": "N26",            "channel": "data",        "cardinality": "1:1",  "activation": "always within --improve subpipeline"},
     {"id": "E19",          "source": "N26", "target": "N27",            "channel": "data",        "cardinality": "1:1",  "activation": "always within --improve subpipeline"},
     {"id": "E20",          "source": "N27", "target": "user",           "channel": "data",        "cardinality": "1:1",  "activation": "terminal for --improve subpipeline; improvement report written unconditionally; E21 fires AFTER E20 resolves in no-flag mode"},
-    {"id": "E21",          "source": ["N27","N15"], "target": "user",   "channel": "interactive", "cardinality": "1:1",  "activation": "fix? offer; in --improve no-flag mode fires after E20; in non-improve no-flag mode fires after E12"}
+    {"id": "E21",          "source": ["N27","N15"], "target": "user",   "channel": "interactive", "cardinality": "1:1",  "activation": "fix? offer; in --improve no-flag mode fires after E20; in non-improve no-flag mode fires after E12"},
+    {"id": "E_trace_detector", "source": "N00b", "target": "N14",       "channel": "data",        "cardinality": "1:1",  "activation": "always; v2.0.2 — N00b's detector_confidence_trace flows to N14 Pass A check #9 (frontmatter coherence). Side-channel to the main N13→N14 data path."},
+    {"id": "E_trace_section",  "source": "N02",  "target": "N14",       "channel": "data",        "cardinality": "1:1",  "activation": "always; v2.0.2 — N02's section_selector_confidence flows to N14 Pass A check #9 (frontmatter coherence). Side-channel to the main N13→N14 data path."},
+    {"id": "E_log_thread",     "source": "N10",  "target": "N14",       "channel": "data",        "cardinality": "1:1",  "activation": "always; v2.0.2 — N10's falsifiability_survival_log flows directly to N14 (bypass N11/N12/N13 which do not carry it). Replaces the broken 'passed through N13' path documented in v2.0.1."}
   ]
 }

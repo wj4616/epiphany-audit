@@ -1,4 +1,4 @@
-# epiphany-audit SKILL (v2.0.0)
+# epiphany-audit SKILL (v2.0.3)
 
 Multi-input-type graph-of-thought audit + safeguarded fix pipeline.
 Family: `epiphany-*`
@@ -60,6 +60,7 @@ Family: `epiphany-*`
 | `--fix` (no arg) | N/A (new in v2.x) | Auto-discover most recent audit report for resolved target. See `<report>` resolution order below. |
 | `--improve` (standalone) | N/A (new in v2.x) | Runs audit prerequisite check; if no report → offers to audit first; then runs improvement subpipeline |
 | `--improve` + `--deep` | N/A | Improvement brainstorming with subagent fan-out |
+| `--improve` + `--fix` | N/A (new in v2.0.3) | Runs audit prerequisite check; if no report → offers to audit first; runs fix pipeline on audit report, then runs improvement subpipeline on the same report. Valid invocation: `--improve --fix` — the combined form runs both pipelines sequentially on one audit report without requiring `--audit`. |
 
 ### Autonomy flags (mutually exclusive — unchanged from v1.x)
 
@@ -131,38 +132,43 @@ Warn-and-prompt (soft halt; user may override via `~/.config/epiphany-audit/allo
 
 ---
 
-## 4. Pipeline Diagram (v2.0.0)
+## 4. Pipeline Diagram (v2.0.3)
 
 ```
 invoke
-  └─ N01 ContextIntake (produces raw project context + resolved_flags)
+  └─ N01 ContextIntake (produces project_model + resolved_flags; input_type=null until N00b feedback)
        └─ N00a AuditabilityPrerequisiteGate
             ├─ FAIL → non-auditability verdict → user
             └─ PASS
-                 └─ N00b InputTypeDetector (structural fingerprinting; sets input_type)
-                      ├─ classified → routing
-                      └─ ambiguous-text → universal-only routing
-                           └─ N02 R-ROUTE (loads dimension plugins; consumes input_type;
-                                            floor: CORRECTNESS + MAINTAINABILITY always on;
-                                            applies per-type section-activation matrix)
-                                ├─ N03 B-FIND (E02; per-input-type gap heuristics;
-                                │             auto-add HIGH-confidence gaps; --deep: interactive)
-                                │    [N03 updates activation map; N04..N09 consume updated map]
-                                └─ N04..N09 DimensionAnalyzers (E03 from N02; per updated activation map;
-                                          parallel fan-out under --deep)
-                                          └─ N10 FPV (false-positive check + location cache; BACKTRACK single cap)
-                                               └─ N11 Aggregator (dedup, merge, count-collapse)
-                                                    └─ N12 Prioritizer (priority_score, punch list)
-                                                         └─ N13 Formatter (markdown per template; emits tetrad on every finding)
-                                                              └─ N14 Q-GATE
-                                                                   Pass A (mandatory-field + location + CRITICAL/HIGH + no-comment-echo)
-                                                                   Pass B (conditional subagent: ≥5 findings OR CRITICAL/HIGH OR --deep)
-                                                                   └─ N15 SaveHandler (emits self-audit traces: detector-confidence,
-                                                                        section-selector-confidence, tetrad-completeness, two-axis scores,
-                                                                        falsifiability survival log)
-                                                                        └─ [--improve]: N24 → N25 → N26 → N27 → user (E20)
-                                                                        └─ [no-flag]: fix-offer (E21) → N16..N23 fix pipeline
-                                                                        └─ [--audit]: done
+                 └─ N00b InputTypeDetector (structural fingerprinting; sets input_type via E00d feedback;
+                                            also fans out E_trace_detector → N14 with detector_confidence_trace)
+                      └─ N02 R-ROUTE (loads <skill_dir>/dimensions/*.md; section-activation matrix +
+                                       plugin-scope gate; floor CORRECTNESS+MAINTAINABILITY always on;
+                                       fans out E02 → N03 AND E_trace_section → N14 with section_selector_confidence)
+                                └─ N03 B-FIND (E02; per-type gap heuristics; auto-add HIGH-confidence gaps)
+                                └─ N04..N09 DimensionAnalyzers (E03 from N02; under --deep, ≤1 shared subagent slot)
+                                          └─ N10 FPV (4-question disposition + location cache;
+                                                      ALSO falsifiability counter-arguments for severity ≥ MEDIUM,
+                                                      aggregated into falsifiability_survival_log;
+                                                      fans out E07 → N11 AND E_log_thread → N14)
+                                               └─ N11 Aggregator → N12 Prioritizer → N13 Formatter
+                                                    └─ N14 Q-GATE (Pass A inline + Pass B conditional subagent)
+                                                         Pass A 9 checks (v2.0.2): mandatory-field, tetrad-completeness,
+                                                            location, CRITICAL/HIGH × confidence floor, duplicate-merge,
+                                                            no-comment-echo, no-LOW-only warning, two-axis hard gate (#8),
+                                                            frontmatter-trace coherence (#9)
+                                                         Halts: pass-a, pass-b, pass-b-exec-error,
+                                                                two-axis-below-threshold, frontmatter-trace-incoherence
+                                                         └─ N15 SaveHandler (writes 6 self-audit fields at frontmatter top level:
+                                                                  detector_confidence, section_selector_confidence,
+                                                                  tetrad_completeness, two_axis_scores,
+                                                                  two_axis_scores_overridden_by_user,
+                                                                  falsifiability_survival_log)
+                                                                  └─ [--improve]: N24 → N25 → N26 → N27 → user (E20)
+                                                                  └─ [--improve --fix]: fix-offer (E21) → N16..N23 fix pipeline
+                                                                     → N24 → N25 → N26 → N27 → user (E20)
+                                                                  └─ [no-flag]: fix-offer (E21) → N16..N23 fix pipeline
+                                                                  └─ [--audit]: done
 ```
 
 ### Fix pipeline (unchanged topology, augmented with multi-type project scope)
@@ -184,7 +190,7 @@ The upgraded skill emits per run:
 - **section-selector-confidence trace** — which sections activated, which suppressed, why?
 - **tetrad-completeness check** — every finding has all 4 tetrad tags
 - **two-axis scoring verdict** — creativity ≥7 AND functional-correctness ≥7
-- **falsifiability survival log** — which creative findings survived their counter-arguments
+- **falsifiability survival log** — counts of severity ≥ MEDIUM findings that survived/downgraded/dropped per their counter-arguments (v2.0.1 scope; was 'creative' tag in v2.0.0)
 
 ---
 
@@ -660,13 +666,17 @@ A plugin that omits `input_types` defaults to `[code]` only — preserving back-
 
 ## 16. Falsifiability-First Creativity Check
 
-For every audit finding tagged "creative" or "novel," the system MUST generate the strongest available counter-argument against its own finding. The finding survives and is emitted only if it withstands the counter-argument.
+For every audit finding with **severity ≥ MEDIUM** (i.e., MEDIUM, HIGH, or CRITICAL), the system MUST generate the strongest available counter-argument against its own finding. The finding survives and is emitted only if it withstands the counter-argument.
 
-**Survival check:**
-1. Generate counter-argument: what is the strongest case that this finding is a false positive?
+**Scope rule (v2.0.1):** the falsifiability check fires on severity (objective, present on every finding) rather than on a `creative`/`novel` tag (no analyzer produced such a tag in v2.0.0). This matches the practice already shown in `tests/schema-validation/fixtures/valid_audit_report.json` where the canonical fixture applies falsifiability to a HIGH-severity finding. INFO and LOW severities skip the check (cost vs. value).
+
+**Producer of the check:** N10 FalsePositiveVerifier — see N10 module contract. N10 has source-file Read access (already used for location verification), so it can construct stronger counter-arguments than N13 could from Finding prose alone. N13 only renders the resulting `falsifiability` block in the report.
+
+**Survival check (executed in N10):**
+1. Generate counter-argument: what is the strongest case that this finding is a false positive? Use both the finding's `evidence_excerpt` AND a fresh Read of up to 2-3 lines of context around `location` if not already in the location_verification_cache.
 2. Evaluate: does the finding's evidence withstand the counter-argument?
-3. If yes → emit finding with `falsifiability: survived` and the counter-argument recorded in `falsifiability_counter`
-4. If no → drop or downgrade finding; record in falsifiability survival log
+3. If yes → emit finding with `falsifiability.status: "survived"` and counter-argument recorded in `falsifiability.counter_argument`; rationale in `falsifiability.survival_rationale`.
+4. If no → either drop the finding (if the counter-argument is decisive) or downgrade severity by one tier; record outcome in N10's contribution to the falsifiability survival log.
 
 ```yaml
 falsifiability:
@@ -679,7 +689,7 @@ falsifiability:
 
 ## 17. Multi-Trial Creativity Tournament
 
-For high-impact findings (severity ≥ HIGH or tagged "creative"), generate 3 alternative framings of the same finding and rank them by:
+For high-impact findings (severity ≥ HIGH), generate 3 alternative framings of the same finding and rank them by:
 1. **Actionability** — can the user act on this framing immediately?
 2. **Preservation of original intent** — does the framing preserve what the code/doc intends?
 3. **Creative leverage** — does the framing open novel improvement paths beyond the immediate fix?
@@ -695,43 +705,40 @@ Before final artifact emission, the audit pipeline scores its own output on two 
 - **Creativity axis (0–10):** novelty against thin KB, surviving falsification, going beyond known patterns
 - **Functional correctness axis (0–10):** passes simulated audit on each of the 5 input types
 
-Both axes must score ≥7 for valid output. Failing either axis triggers regeneration.
+Both axes must score ≥7 for valid output. Failing either axis halts the pipeline at N14 with `halt-on-q-gate-failure` (subreason: `two-axis-below-threshold`); the user is shown the failing scores with rationale and may either accept the report under explicit override (recorded in run log) or regenerate.
 
-Two-axis scoring rubric:
+**Producer:** N14 Q-GATE Pass A check #8. N14 computes both scores against the rubric below, stores them as a top-level `two_axis_scores` field on the validated_report, and gates emission to N15.
 
-**Creativity:**
-- 0–3: recapitulates standard GoT patterns; no novel structural moves
-- 4–6: at least one novel structural move (e.g., suppression matrix, prerequisite gate) but conventional execution
-- 7–8: multiple novel moves AND each survives a falsification counter-argument
-- 9–10: cross-domain synthesis (medical-diagnostic framing, falsifiability-first creativity, tournament ranking) AND every novel move is auditable
+**Override:** under `--auto`, a single failure of the gate halts; under `--confirm-all` or `--dry-run`, the user is prompted with the failing rationale and may waive the gate (the waiver is recorded as `two_axis_scores_overridden_by_user: true` in the report frontmatter).
 
-**Functional correctness:**
-- 0–3: fails simulated audit on ≥3 of 5 input types
-- 4–6: passes simulated audit on 3 of 5 input types
-- 7–8: passes simulated audit on 4 of 5 input types AND --fix mode validates back-compat on code
-- 9–10: passes simulated audit on all 5 input types AND --fix/--improve validates back-compat AND non-auditability verdict path tested
+Two-axis scoring rubric: see N14 module §"Two-Axis Score Computation Rubric (v2.0.2 — mechanical)" for the authoritative computable predicates. Two implementations evaluating the same report MUST produce identical scores. Summary:
+
+- **Creativity** sums points across deterministic predicates over `tetrad_completeness`, `falsifiability_survival_log`, `dimensions_activated`, `gap_dimensions_auto_added`, `section_selector_confidence`, and finding-body fields.
+- **Functional correctness** sums points across schema-validity, q_gate state, detector confidence, location-cache verification, floor-dimension presence, frontmatter-trace coherence, tetrad completeness, and CRITICAL/HIGH × confidence floor.
+
+The threshold (≥7 each axis) is calibrated so a well-formed report with full tetrad coverage and full falsifiability coverage scores ≥7 on creativity; a schema-validating report with verified locations and coherent traces scores ≥7 on functional correctness. Reports failing schema validation cannot pass the gate.
 
 ---
 
-## 19. graph.json v2.0.0
+## 19. graph.json v2.0.2
 
-`graph.json` is at version `2.0.0` with 29 nodes, 29 edges (5 new: E00a–E00e), N00a/N00b entries, and updated N01/N02/N13/N14/N15 notes fields. See `graph.json` for the authoritative declaration.
+`graph.json` is at version `2.0.3` with 29 nodes and 40 edges. v2.0.0 introduced E00a–E00e + the E13 chain + E_repair / E_rerun_fail / E_diffscope / E_finalize / E_complete / E_halt_partial / E15 / E16–E21. v2.0.2 added three side-channel edges: E_trace_detector (N00b → N14), E_trace_section (N02 → N14), E_log_thread (N10 → N14) — wiring N14's documented inputs through the graph rather than via implicit context-passing. The `conventions` block documents propagation rules and runtime-enforced caps. See `graph.json` for the authoritative declaration.
 
 ---
 
 ## 20. Back-Compat Verification Surface
 
-The following v1.x behaviors MUST survive unchanged into v2.x:
+The following v1.x behaviors are preserved into v2.x; **v2.0.x changes that fire on code paths** are called out explicitly so implementations don't read v1.x behavior into the spec where v2 has updated it.
 
-1. `--audit` flag on a code project → identical audit pipeline, identical report format (plus tetrad augmentation)
-2. `--fix <report>` with explicit report path → identical fix pipeline behavior for code projects
+1. `--audit` flag on a code project → v1.x audit pipeline preserved; report format augmented with v2.x tetrad and v2.0.1+ self-audit frontmatter fields (additive; v1.x parsers ignore unknown frontmatter)
+2. `--fix <report>` with explicit report path → v1.x fix pipeline preserved; v2.0.1 added recovery-conflict detection at fix-mode entry (fires on code paths)
 3. Tier-1/Tier-2/Tier-3 classification rules for code → unchanged
 4. Autonomy policy matrix for code → unchanged
-5. `--dry-run` on code → unchanged
+5. `--dry-run` on code → v1.x preserved; v2.0.1 N17 emits a warning when `--no-rerun`/`--full-rerun` is also set under `--dry-run` (cosmetic only)
 6. Recovery manifest lifecycle → unchanged
-7. All v1.x halt states → still fire under identical conditions for code paths
-8. `--verbose`, `--deep` (for code), `--escalate-finding`, `--test-cmd`, `--monorepo-subtree-limit`, `--reverify-state`, `--full-rerun`, `--no-rerun` → unchanged for code
+7. v1.x halt states → still fire under v1.x conditions; **new halt states added in v2.x that ALSO fire on code paths**: `halt-on-recovery-conflict` (v2.0.1), `halt-on-q-gate-failure` subreasons `two-axis-below-threshold` and `frontmatter-trace-incoherence` (v2.0.1), `halt-pre-fix-on-validator-failure` subreason `suspicious-content-rejected` (v2.0.1)
+8. `--verbose`, `--deep` (for code), `--escalate-finding`, `--test-cmd`, `--monorepo-subtree-limit`, `--reverify-state`, `--full-rerun`, `--no-rerun` → unchanged for code; v2.0.2 adds `--max-fix-group-size`, `--max-merge-depth`, `--skip-verification-tool` for non-code (no-op on code)
 9. Report paths for code → unchanged naming scheme
 10. Cross-schema invariants for fix-reports → unchanged
-11. Q-GATE Pass A / Pass B behavior for code → unchanged
+11. Q-GATE for code → Pass A grew from 7 v1.x checks to **9 checks in v2.0.1** (added: tetrad-completeness #2, two-axis hard gate #8, frontmatter-trace coherence #9). Pass B unchanged. The two new gates fire on code paths. Implementations following v1.x Pass A semantics will under-implement; consult N14 module contract for the v2.0.2 authoritative list.
 12. Finding `priority_score` formula → unchanged

@@ -61,6 +61,8 @@ For non-code input types (specification-document, plan-document, skill, prompt),
    b. ANY VERIFY FAIL:
       - For each tracked-touched file: git checkout -- <file> (restore original)
       - For each new-file: rm <file> (clean up)
+      - Non-git fallback: if git checkout fails (e.g., file not in git repo),
+        write pre-state content from step 1a back to the file using Write tool
       - No partial state left on disk
       - Route through E_repair (retry → replan → cap-hit)
 ```
@@ -100,6 +102,7 @@ For non-code input types (specification-document, plan-document, skill, prompt),
        d. Exit inner loop → fall through to FIX-GROUP END (success)
     4. FAIL:
        a. git checkout -- <tracked-touched-files>
+          (if git checkout fails, write pre-state content from memory)
        b. git clean -fd <new-files-created-by-this-attempt>
        c. Record failure_context (failure_class + diagnostic from N20)
        d. E_repair routing:

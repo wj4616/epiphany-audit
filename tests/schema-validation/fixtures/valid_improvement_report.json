@@ -3,6 +3,7 @@
   "improvement_report_id": "880e8400-e29b-41d4-a716-446655440000",
   "source_audit_report": "/home/user/docs/epiphany/audit/myproject-20260427-100000.md",
   "source_report_id": "550e8400-e29b-41d4-a716-446655440000",
+  "source_audit_report_sha256": "abc123def456",
   "audit_target": "/home/user/myproject",
   "improvement_timestamp": "2026-04-27T12:00:00Z",
   "tool_version": "1.0.0",
