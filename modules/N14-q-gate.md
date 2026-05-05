@@ -144,6 +144,11 @@ Adversarial self-review. No backtracking to N04..N09.
 
 1:1 → N15 (E11) after both passes complete.
 
+**TRACE (mandatory, non-blocking) — after both Pass A and Pass B complete and before routing to N15, call this Bash command.** Substitute: `PASSA` = `pass`, `pass-minimal`, or `fail`; `PASSB` = `pass`, `fail`, `exec-error`, `skipped-token-cap`, or `skipped-low-volume`; `CREAT` = integer creativity score 0–10 (use `null` if token-capped); `FC` = integer functional_correctness score 0–10 (use `null` if token-capped); `TOTAL` = total_findings count; `TETRAD` = tetrad_completeness.tetrad_complete count; `SURVIVED` = falsifiability_survival_log.survived count; `DROPPED` = falsifiability_survival_log.dropped count:
+```
+python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py qgate --pass-a "PASSA" --pass-b "PASSB" --creativity CREAT --functional-correctness FC --total-findings TOTAL --tetrad-complete TETRAD --survived SURVIVED --dropped DROPPED 2>/dev/null || true
+```
+
 ## Back-edge Endpoints
 
 None. Q-GATE is a terminal verifier for the audit pipeline.

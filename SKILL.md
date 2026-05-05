@@ -27,7 +27,7 @@ Family: `epiphany-*`
 
 **MUST NOT invoke:** `writing-plans`, `executing-plans`, `find-skills`, `brainstorming`.
 
-**Write-tool footprint:** report files under `~/docs/epiphany/audit/` only; fix diffs against the entire `audit_target` project scope only.
+**Write-tool footprint:** report files under `~/docs/epiphany/audit/` only (and only when `--report`/`--reports` given); fix diffs against the entire `audit_target` project scope only.
 
 ---
 
@@ -35,6 +35,7 @@ Family: `epiphany-*`
 
 ```
 /epiphany-audit [<path>] [--audit | --fix [<report>] | --improve]
+                [--report | --reports]
                 [--verbose] [--deep]
                 [--auto | --confirm-all | --dry-run]
                 [--escalate-finding F00N] [--test-cmd '<cmd>']
@@ -46,10 +47,10 @@ Family: `epiphany-*`
 
 | Flag | Behavior |
 |------|----------|
-| `--audit` | Produce report only; do NOT offer fix pipeline (read-only) |
-| `--fix [<report>]` | Apply fixes from an audit report. `<report>` optional — if omitted, auto-discovers the most recent audit report for the resolved target. Explicit `<report>` preserves v1.x back-compat. |
-| `--improve` | Surface and apply improvements (additive enhancements, optimizations, novel structural moves). Requires a prior audit (or runs one on user confirmation if none exists). |
-| (none) | Default: audit → save report → offer to apply fixes. On accept → `--fix`-equivalent; on reject → report preserved as run output. |
+| `--audit` | Produce audit inline; do NOT offer fix pipeline (read-only) |
+| `--fix [<report>]` | Apply fixes. `<report>` optional — if omitted, runs a fresh audit first (never loads stale reports). Explicit `<report>` loads that specific saved report. |
+| `--improve` | Surface and apply improvements (additive enhancements, optimizations, novel structural moves). Runs a fresh audit first if no report given. |
+| (none) | Default: audit inline → offer to apply fixes. No report files written unless `--report`/`--reports` given. |
 
 ### Mode interaction rules (v2.x changes from v1.x)
 
@@ -57,10 +58,10 @@ Family: `epiphany-*`
 |-------------|--------------|--------------|
 | `--audit` + `--fix` | `halt-on-flag-conflict` | **Sequential:** audit runs first, then fix consumes the resulting report automatically. Valid invocation: `--audit --fix` |
 | `--audit` + `--fix <report>` | `halt-on-flag-conflict` | `halt-on-flag-conflict` (unchanged — explicit report bypasses fresh audit, can't combine with `--audit`) |
-| `--fix` (no arg) | N/A (new in v2.x) | Auto-discover most recent audit report for resolved target. See `<report>` resolution order below. |
-| `--improve` (standalone) | N/A (new in v2.x) | Runs audit prerequisite check; if no report → offers to audit first; then runs improvement subpipeline |
+| `--fix` (no arg) | N/A (new in v2.x) | Runs a fresh audit, then applies fixes. Never loads stale reports from disk. |
+| `--improve` (standalone) | N/A (new in v2.x) | Runs a fresh audit, then runs improvement subpipeline |
 | `--improve` + `--deep` | N/A | Improvement brainstorming with subagent fan-out |
-| `--improve` + `--fix` | N/A (new in v2.0.3) | Runs audit prerequisite check; if no report → offers to audit first; runs fix pipeline on audit report, then runs improvement subpipeline on the same report. Valid invocation: `--improve --fix` — the combined form runs both pipelines sequentially on one audit report without requiring `--audit`. |
+| `--improve` + `--fix` | N/A (new in v2.0.3) | Runs a fresh audit, then fix pipeline, then improvement subpipeline. Valid invocation: `--improve --fix` — the combined form runs all three stages on one fresh audit. |
 
 ### Autonomy flags (mutually exclusive — unchanged from v1.x)
 
@@ -71,10 +72,12 @@ Family: `epiphany-*`
 | `--dry-run` | Emit fix-plan + diffs only; no apply, no commits, no branch; pipeline halts at N17 |
 | >1 of the above | `halt-on-flag-conflict`; precedence: `--dry-run` > `--confirm-all` > `--auto` |
 
-### Other flags (preserved from v1.x)
+### Other flags
 
 | Flag | Behavior |
 |------|----------|
+| `--report` | Save audit report to `~/docs/epiphany/audit/` (default: skip). Without this flag, audit runs inline and findings are communicated in conversation output only. |
+| `--reports` | Save all three reports (audit + fix + improvement) to `~/docs/epiphany/audit/`. Implies `--report`. |
 | `--verbose` | Adds depth where it improves actionability; never adds nitpick padding |
 | `--deep` | Per-input-type deep behavior (see §14). For code: ≤3 spawn budget, subagent fan-out per dimension, interactive B-FIND. For non-code: type-specific deep analysis. |
 | `--escalate-finding F00N` | Force finding to high-risk regardless of classification; overrides auto-apply for that finding; `halt-on-invalid-finding-id` if ID not in report |
@@ -83,32 +86,27 @@ Family: `epiphany-*`
 | `--full-rerun` / `--no-rerun` | Override audit-rerun tier policy; mutually exclusive |
 | `--reverify-state` | Clear `reachable: false` annotations from state file at `--fix` entry; valid in `--fix` mode only |
 
+`--report` and `--reports` are orthogonal to mode flags (combine with any). `--reports` implies `--report`; if both given, `--reports` wins — no conflict.
+
 ### `<report>` resolution order (for `--fix`)
 
-**Explicit `<report>` (v1.x back-compat path):**
+**Explicit `<report>` (only way to reuse a saved report):**
 1. Absolute path
 2. Path relative to cwd
 3. Bare filename or partial slug: search `~/docs/epiphany/audit/` then `fix-reports/`; if no extension, append `.md` and retry
 4. Multiple matches → `halt-on-ambiguous-fix-report`
 5. No match → `halt-on-unresolvable-fix-report`
 
-**No `<report>` argument (v2.x canonical path):**
-1. Resolve the target project (via implied-context resolution, §3)
-2. Derive the project slug per input-type slug rules (§13)
-3. Search `~/docs/epiphany/audit/` for reports matching the slug pattern, ordered by timestamp descending
-4. Zero reports → prompt: "No audit report found for this project. Run the audit first? (y/n)" → on `y`: audit → fix; on `n`: halt
-5. Exactly one report → use it
-6. Multiple reports → list candidates with timestamps, ask user to select
+**No `<report>` argument:** Always runs a fresh audit. Never searches for or loads stale reports from disk. To reuse a saved report, pass it explicitly: `--fix <report>`.
 
-### Audit-report prerequisite check (mandatory at `--fix` and `--improve` invocation)
+### Audit-report prerequisite check (only when `--fix <report>` with explicit report)
 
-Before applying any fix or improvement, the system checks whether a recent audit report exists:
+When an explicit `<report>` is given, the system checks whether the report is current:
 
-1. Compute current `project_content_sha256` per the hashing scope for the input type (see §11)
-2. If report found AND `current_sha256 == report.project_content_sha256` → **recent** — proceed
-3. If report found AND `current_sha256 != report.project_content_sha256` → **stale** — prompt: "Audit report is stale (project modified since last audit). Re-run audit before applying fixes? (y/n)" On `y` → re-audit then apply. On `n` → proceed with stale report under user acknowledgment; staleness recorded in run log.
-4. If no report found → prompt user to audit first (see resolution order above)
-5. If report file missing (SHA-256 captured in metadata but file deleted) → `halt-on-stale-source-report`
+1. Compute current `project_content_sha256` per the hashing scope for the input type (see §13)
+2. If `current_sha256 == report.project_content_sha256` → **recent** — proceed
+3. If `current_sha256 != report.project_content_sha256` → **stale** — warn: "Audit report is stale (project modified since last audit). Re-run audit before applying fixes? (y/n)" On `y` → re-audit then apply. On `n` → proceed with stale report under user acknowledgment; staleness recorded in run log.
+4. If report file missing (SHA-256 captured in metadata but file deleted) → `halt-on-stale-source-report`
 
 ---
 
@@ -129,6 +127,131 @@ Hard halt (`halt-suspicious-target`) if resolved root is `$HOME`, `/`, `/etc`, `
 
 Warn-and-prompt (soft halt; user may override via `~/.config/epiphany-audit/allowed-roots.json`) for:
 - `~/.claude/skills/<x>/`, `~/dotfiles`, `~/.config`, `~/Desktop`, `~/Downloads`
+
+---
+
+## 3.5 Langfuse Tracing Protocol (MANDATORY — non-blocking)
+
+These Bash commands MUST be called at the exact pipeline events listed below. They are observability hooks — they do NOT alter pipeline behavior, do NOT block execution, and always use `2>/dev/null || true`. Execute each one synchronously at the trigger point then immediately continue the pipeline.
+
+**T1 — Session start. Execute immediately after N00b InputTypeDetector sets `input_type` on `project_model` (before routing to N02).** Substitute: `MODE` = active pipeline mode word (e.g. `audit`, `audit-deep`, `audit-verbose`, `fix`, `improve`); `ITYPE` = classified `input_type` string (e.g. `code`, `specification-document`, `plan-document`, `skill`, `prompt`, or `ambiguous-text`); `TARGET` = first ~150 chars of `project_model.audit_target` collapsed to one line (newlines → spaces, internal `"` escaped as `\"`):
+```
+python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py init --mode "MODE" --input-type "ITYPE" --target "TARGET" 2>/dev/null || true
+```
+
+**T2 — Q-Gate complete. Execute immediately after N14 Q-GATE Pass A and Pass B complete (before routing to N15 SaveHandler).** Substitute: `PASSA` = `pass`, `pass-minimal`, or `fail`; `PASSB` = `pass`, `fail`, `exec-error`, `skipped-token-cap`, or `skipped-low-volume`; `CREAT` = integer creativity score 0–10 (use `null` if token-capped); `FC` = integer functional_correctness score 0–10 (use `null` if capped); `TOTAL` = total_findings count; `TETRAD` = tetrad_completeness.tetrad_complete count; `SURVIVED` = falsifiability_survival_log.survived count; `DROPPED` = falsifiability_survival_log.dropped count:
+```
+python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py qgate --pass-a "PASSA" --pass-b "PASSB" --creativity CREAT --functional-correctness FC --total-findings TOTAL --tetrad-complete TETRAD --survived SURVIVED --dropped DROPPED 2>/dev/null || true
+```
+
+**T3 — Audit report saved. Execute immediately after N15 SaveHandler completes the save decision.** Substitute: `PATH` = full absolute path of the saved report (empty string `""` if user declined or `--report`/`--reports` not set); `ID` = report_id uuid; `DECISION` = `accepted` or `declined`:
+```
+python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py audit-save --output-path "PATH" --report-id "ID" --save-decision "DECISION" 2>/dev/null || true
+```
+
+**T4 — Fix report saved. Execute immediately after N23 FixReporter completes.** Substitute: `FIXPATH` = absolute path of the saved fix report (empty string `""` if `--reports` not set); `VERIFIED` = count of outcomes with status `verified`; `FAILED` = count with status `failed`; `DEFERRED` = count with status `deferred`:
+```
+python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py fix-complete --fix-report-path "FIXPATH" --verified VERIFIED --failed FAILED --deferred DEFERRED 2>/dev/null || true
+```
+
+**T5 — Improvement report saved. Execute immediately after N27 ImprovementReporter completes.** Substitute: `IMPROVEPATH` = absolute path of the saved improvement report (empty string `""` if `--reports` not set); `SURVIVORS` = length of the `survivors` array:
+```
+python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py improve-complete --improve-report-path "IMPROVEPATH" --survivors SURVIVORS 2>/dev/null || true
+```
+
+---
+
+## 3.6 Audit Report Frontmatter — Canonical Template (REQUIRED)
+
+When a report is saved to disk (under `--report` or `--reports`), it MUST begin with this exact YAML frontmatter. Fields are written by the nodes indicated. This template is also the **primary data source for the Langfuse quality-improvement feedback loop** — the fields marked `[QUALITY SIGNAL]` are the ones that accumulate across runs in Langfuse to reveal whether the skill is improving or regressing.
+
+> **Why this matters:** The two-axis gate (§18), frontmatter-trace coherence check (N14 Pass A #9), and the `--fix` idempotency system (N16) all require these fields to be structurally correct. Getting the template wrong silently breaks these mechanisms.
+
+```yaml
+---
+# ── Written by N01 + N00b ──
+audit_target: "<absolute path or human-readable title>"
+input_type: "prompt"             # one of: code | specification-document | plan-document | skill | prompt | ambiguous-text
+mode: "audit"                    # pipeline mode word — NOT "audit_mode". Values: audit | audit-deep | fix | improve
+skill_version: "epiphany-audit-v2.0.3"
+timestamp: "2026-05-03T14:30:00"
+project_content_sha256: "<sha256 computed per §13>"
+
+# ── Written by N15 SaveHandler ──
+report_id: "<uuid-v4>"           # REQUIRED for --fix idempotency. Generate with:
+                                 # python3 -c "import uuid; print(uuid.uuid4())"
+
+# ── Written by N02 RelevanceRouter — dimensions the analyzers ran on ──
+dimensions_activated:            # [QUALITY SIGNAL] coverage breadth
+  - CORRECTNESS
+  - MAINTAINABILITY
+  - SECURITY
+  - OUTPUT-SCHEMA-COMPLETENESS   # auto-added by B-FIND
+
+gap_dimensions_auto_added:       # [QUALITY SIGNAL] B-FIND blindspot discovery rate
+  - OUTPUT-SCHEMA-COMPLETENESS   # empty list [] means B-FIND found no new coverage gaps
+
+# ── Written by N15 from N00b detector_confidence_trace ──
+detector_confidence:             # [QUALITY SIGNAL] classification accuracy
+  confidence: "high"             # "high" | "marginal" | "ambiguous"
+  classified_type: "prompt"      # must match input_type above
+  fingerprints:
+    - "<key fingerprint observed>"
+
+# ── Written by N15 from N02 section_selector_confidence ──
+section_selector_confidence:     # [QUALITY SIGNAL] routing accuracy — shows which dimensions fired and why
+  dimensions:
+    CORRECTNESS:     {decision: "ACTIVATE", reason: "floor dimension — mandatory for all types"}
+    MAINTAINABILITY: {decision: "ACTIVATE", reason: "floor dimension — mandatory for all types"}
+    ARCHITECTURE:    {decision: "SUPPRESS", reason: "matrix: S for PROMPT"}
+    PERFORMANCE:     {decision: "SUPPRESS", reason: "matrix: S for PROMPT"}
+    SECURITY:        {decision: "ACTIVATE", reason: "matrix: A for PROMPT (injection surface)"}
+
+# ── Written by N15 from N14 Q-GATE Pass A check #2 ──
+tetrad_completeness:             # [QUALITY SIGNAL] finding completeness rate
+  total_findings: 11             # integer count of ### Finding F* headings
+  tetrad_complete: 11            # integer count where all 4 tetrad fields are present
+  incomplete_ids: []             # list of finding IDs missing any tetrad element
+
+# ── Written by N15 from N14 Q-GATE Pass A check #8 ──
+two_axis_scores:                 # [QUALITY SIGNAL] overall quality verdict
+  creativity: 8                  # integer 0–10 per §18 rubric; must be ≥7 to pass gate
+  functional_correctness: 8      # integer 0–10 per §18 rubric; must be ≥7 to pass gate
+
+two_axis_scores_overridden_by_user: false   # true only if user waived the gate
+
+# ── Written by N15 from N10 FalsePositiveVerifier ──
+falsifiability_survival_log:     # [QUALITY SIGNAL] false-positive filter effectiveness
+  survived: 9                    # severity ≥ MEDIUM findings that withstood challenge
+  downgraded: 1                  # findings whose severity was reduced by falsifiability
+  dropped: 1                     # findings eliminated as false positives
+
+# ── Written by N15 from N14 Q-GATE output ──
+q_gate:                          # [QUALITY SIGNAL] gate verdicts — REQUIRED, do not omit
+  pass_a: "pass"                 # "pass" | "pass-minimal" | "fail" | "skipped-token-cap"
+  pass_b: "skipped-low-volume"   # "pass" | "fail" | "exec-error" | "skipped-token-cap" | "skipped-low-volume"
+  pass_b_lens: null              # model used for adversarial Pass B, or null if skipped
+  pass_b_skip_reason: "fewer than 5 findings and no CRITICAL/HIGH severity"  # null when pass_b ran
+
+# ── Type-specific project_model fields (per §6, insert the block matching input_type) ──
+---
+```
+
+**Field generation rules:**
+- `report_id`: run `python3 -c "import uuid; print(uuid.uuid4())"` during N15 and embed the result
+- `mode`: use the resolved pipeline mode word — never use `audit_mode`
+- `tetrad_completeness.total_findings`: count of `### Finding F*` headings in the report body
+- `tetrad_completeness.tetrad_complete`: count of findings where all 4 fields (presenting_symptom, underlying_cause, prognosis, confidence_interval) are present
+- `gap_dimensions_auto_added`: empty list `[]` if B-FIND added no dimensions; otherwise list the added dimension names
+- `q_gate.pass_b_skip_reason`: present when `pass_b` is `skipped-*`; `null` when Pass B actually ran
+- `falsifiability_survival_log.downgraded`: severity-reduced findings (separate from dropped — do not fold into dropped)
+
+**Quality feedback loop:** Each run's frontmatter feeds the Langfuse trace. Across runs, watch for:
+- `two_axis_scores.creativity` trending below 8 → B-FIND or falsifiability analysis weakening
+- `gap_dimensions_auto_added` always empty → B-FIND never firing; possible routing issue
+- `falsifiability_survival_log.dropped` always 0 → falsifier may not be challenging findings aggressively enough
+- `tetrad_completeness.tetrad_complete < total_findings` → finding formation is incomplete
+- `q_gate.pass_b` always `skipped-low-volume` → consider running with `--deep` flag more often
 
 ---
 
@@ -159,11 +282,8 @@ invoke
                                                             frontmatter-trace coherence (#9)
                                                          Halts: pass-a, pass-b, pass-b-exec-error,
                                                                 two-axis-below-threshold, frontmatter-trace-incoherence
-                                                         └─ N15 SaveHandler (writes 6 self-audit fields at frontmatter top level:
-                                                                  detector_confidence, section_selector_confidence,
-                                                                  tetrad_completeness, two_axis_scores,
-                                                                  two_axis_scores_overridden_by_user,
-                                                                  falsifiability_survival_log)
+                                                         └─ N15 SaveHandler (if --report/--reports: writes report to disk + 6 self-audit frontmatter fields;
+                                                                  if not: skips disk write, emits inline summary, sets saved_report_path="")
                                                                   └─ [--improve]: N24 → N25 → N26 → N27 → user (E20)
                                                                   └─ [--improve --fix]: fix-offer (E21) → N16..N23 fix pipeline
                                                                      → N24 → N25 → N26 → N27 → user (E20)
@@ -180,7 +300,7 @@ invoke
                  └─ N19 FixApplier (atomic loop per fix-group; multi-file transactional)
                       └─ N20 PerFixVerifier (project-scope verification)
                            └─ N21 RegressionBattery (project-scope battery + audit-rerun)
-                                └─ N23 FixReporter → N22 RollbackHandler → user
+                                └─ N23 FixReporter (if --reports: writes fix report; else: inline summary only) → N22 RollbackHandler → user
 ```
 
 ### Self-audit trace emission (per run)
@@ -211,8 +331,8 @@ The upgraded skill emits per run:
 | N02 | RelevanceRouter | Consumes `input_type` from project_model; applies per-type section-activation matrix with suppression rules |
 | N03 | BlindspotFinder | Per-input-type gap heuristics (see §10) |
 | N13 | ReportFormatter | Emits medical-diagnostic finding tetrad on every finding |
-| N15 | SaveHandler | Emits self-audit traces; resolves report slug per input type (§13) |
-| N16 | FixTriage | Added audit-report prerequisite check (recent/stale detection via `project_content_sha256`) |
+| N15 | SaveHandler | Emits self-audit traces; resolves report slug per input type (§13). Writes to disk only under `--report`/`--reports`; otherwise emits inline summary. |
+| N16 | FixTriage | Added audit-report prerequisite check for explicit `<report>` only (no-arg `--fix` always runs fresh audit) |
 | N17 | FixPlanner | Multi-file plans with per-input-type confirmation thresholds |
 | N19 | FixApplier | Multi-file transactional semantics (atomic-commit on success, rollback on partial failure) |
 
@@ -248,11 +368,11 @@ None. All v1.x nodes preserved. New nodes inserted into the existing ID space at
 | N20 | PerFixVerifier | fix | verifier |
 | N21 | RegressionBattery | both | verifier |
 | N22 | RollbackHandler | fix | recovery |
-| N23 | FixReporter | fix | formatter |
+| N23 | FixReporter | fix | formatter (writes to disk only under --reports) |
 | N24 | ImprovementContextualizer | improve | analyzer |
 | N25 | ImprovementBrainstormer | improve | analyzer |
 | N26 | OverEngineeringFilter (OEF) | improve | filter |
-| N27 | ImprovementReporter | improve | formatter |
+| N27 | ImprovementReporter | improve | formatter (writes to disk only under --reports) |
 
 ---
 

@@ -3,6 +3,7 @@
 **Type:** formatter
 **Mode:** inline
 **Active in:** `improve`
+**Persistence:** conditional — writes to disk only under `--reports`; otherwise emits inline survivors table only
 
 ## Inputs
 
@@ -12,10 +13,22 @@ discarded_improvements: object[]        // from N26 (for --verbose section)
 improvement_context: (from N24)
 resolved_flags: (from entry)
 source_report_id: string
-saved_audit_report_path: string | null  // null if N15 save was declined
+saved_audit_report_path: string | null  // null if N15 save was declined or skipped
 improvement_partial: boolean            // true if N24..N26 pipeline failed partway
 improvement_partial_warning: string | null
 ```
+
+## Flag Gate
+
+**If `--reports` is NOT set:**
+- Do NOT write any files to disk
+- Do NOT attempt backpatch of audit report
+- Emit an inline survivors table in conversation output (with utility/cost scores and categories)
+- Fire T5 tracer with `IMPROVEPATH=""` and `SURVIVORS` count
+- Return
+
+**If `--reports` is set:**
+- Proceed with the disk-write + backpatch flow below
 
 ## Outputs
 
@@ -26,13 +39,17 @@ improvement_report_path: string   // absolute path where the report was saved
 
 ## Side Effects
 
-- Write-report: saves improvement report to `~/docs/epiphany/audit/improvement-reports/<project-slug>-<YYYYMMDD>-<HHMMSS>-improve.md` **unconditionally** (no save prompt)
-- Conditional in-place patch: updates `improvement_report_ref` in the already-saved audit report's YAML frontmatter (only when N15 save was accepted)
+- Write-report (only under `--reports`): saves improvement report to `~/docs/epiphany/audit/improvement-reports/<project-slug>-<YYYYMMDD>-<HHMMSS>-improve.md`
+- Conditional in-place patch (only under `--reports`): updates `improvement_report_ref` in the already-saved audit report's YAML frontmatter (only when N15 save was accepted)
 - Write-log
+- **TRACE (mandatory, non-blocking) — immediately after N27 completes, call this Bash command.** Substitute: `IMPROVEPATH` = absolute path of the saved improvement report (empty string `""` if `--reports` not set); `SURVIVORS` = length of the `survivors` array:
+  ```
+  python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py improve-complete --improve-report-path "IMPROVEPATH" --survivors SURVIVORS 2>/dev/null || true
+  ```
 
 ## Halt Conditions
 
-None. N27 always writes what it has (including partial results when `improvement_partial: true`).
+None. N27 always emits an inline summary (and writes to disk only under `--reports`).
 
 ## Backpatch Failure Handling
 

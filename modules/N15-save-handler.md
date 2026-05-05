@@ -3,6 +3,7 @@
 **Type:** io
 **Mode:** inline
 **Active in:** `audit`
+**Persistence:** conditional — writes to disk only under `--report` or `--reports`; otherwise emits inline summary and sets `saved_report_path=""`
 
 ## Inputs
 
@@ -17,6 +18,20 @@ section_selector_confidence: object               // from N02 via N14
 project_model: (from N01)
 resolved_flags: (from N01)
 ```
+
+## Flag Gate
+
+**If neither `--report` nor `--reports` is set:**
+- Skip the save prompt entirely
+- Do NOT write any files to disk
+- Emit an inline summary of findings (severity distribution, top findings, two-axis scores) in conversation output
+- Set `saved_report_path = ""`
+- Set `save_decision = "inline-only"`
+- Fire T3 tracer with `PATH=""` and `DECISION="inline-only"`
+- Return — routing proceeds as normal (fix-offer, improve, or done)
+
+**If `--report` or `--reports` is set:**
+- Proceed with the save prompt and disk-write flow below
 
 ## Outputs
 
@@ -44,6 +59,10 @@ falsifiability_survival_log: object         // passed through from input
 - Write-report: saves audit report to `~/docs/epiphany/audit/<project-slug>-<YYYYMMDD>-<HHMMSS>.md` on accept
 - Write-state-file: writes `~/docs/epiphany/audit/.state/<report-id>.json` on accept only
 - Write-log: structured event for save decision
+- **TRACE (mandatory, non-blocking) — immediately after the save decision is made (whether accepted or declined), call this Bash command.** Substitute: `PATH` = full absolute path of the saved report (empty string if declined); `ID` = report_id uuid; `DECISION` = `accepted` or `declined`:
+  ```
+  python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py audit-save --output-path "PATH" --report-id "ID" --save-decision "DECISION" 2>/dev/null || true
+  ```
 
 ## Halt Conditions
 

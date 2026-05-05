@@ -3,6 +3,7 @@
 **Type:** formatter
 **Mode:** inline
 **Active in:** `fix`
+**Persistence:** conditional — writes to disk only under `--reports`; otherwise emits inline outcomes table only
 
 ## Inputs
 
@@ -19,6 +20,17 @@ is_partial: boolean                  // true on halt-mid-fix-*
 halt_state_id: string | null         // present on partial
 ```
 
+## Flag Gate
+
+**If `--reports` is NOT set:**
+- Do NOT write any files to disk
+- Emit an inline outcomes table in conversation output (verified/failed/deferred counts per finding)
+- Fire T4 tracer with `FIXPATH=""` and `VERIFIED/FAILED/DEFERRED` counts
+- Return
+
+**If `--reports` is set:**
+- Proceed with the disk-write flow below
+
 ## Outputs
 
 ```
@@ -28,12 +40,16 @@ fix_report_id: string         // uuid v4 (generated here)
 
 ## Side Effects
 
-- Write-report: saves fix report to `~/docs/epiphany/audit/fix-reports/<source-report-id>-fix-<YYYYMMDD>-<HHMMSS>.md`
+- Write-report (only under `--reports`): saves fix report to `~/docs/epiphany/audit/fix-reports/<source-report-id>-fix-<YYYYMMDD>-<HHMMSS>.md`
 - Write-log
+- **TRACE (mandatory, non-blocking) — immediately after N23 completes, call this Bash command.** Substitute: `FIXPATH` = absolute path of the saved fix report (empty string `""` if `--reports` not set); `VERIFIED` = count of per_fix_outcomes with status `verified`; `FAILED` = count with status `failed`; `DEFERRED` = count with status `deferred`:
+  ```
+  python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py fix-complete --fix-report-path "FIXPATH" --verified VERIFIED --failed FAILED --deferred DEFERRED 2>/dev/null || true
+  ```
 
 ## Halt Conditions
 
-None. N23 always writes what it has.
+None. N23 always emits an inline summary (and writes to disk only under `--reports`).
 
 ## Two Invocation Modes
 

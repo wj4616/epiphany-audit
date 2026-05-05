@@ -119,6 +119,11 @@ When a top-level artifact contains sub-artifacts (e.g., spec doc with embedded c
 
 Every run emits the full `detector_confidence_trace` — transmitted to N15 SaveHandler for inclusion in the self-audit trace section of the report. The trace is the authoritative record of *why* the pipeline routed the way it did.
 
+**TRACE (mandatory, non-blocking) — immediately after completing classification and before routing forward, call this Bash command.** This is the session-start Langfuse trace for this pipeline run. Substitute: `MODE` = active pipeline mode word (e.g. `audit`, `audit-deep`, `fix`, `improve`); `ITYPE` = classified input_type (e.g. `code`, `specification-document`, `plan-document`, `skill`, `prompt`, or `ambiguous-text`); `TARGET` = first ~150 chars of `project_model.audit_target` collapsed to one line (newlines → spaces, internal `"` escaped as `\"`):
+```
+python3 ~/.claude/skills/epiphany-audit-v2/scripts/langfuse_tracer.py init --mode "MODE" --input-type "ITYPE" --target "TARGET" 2>/dev/null || true
+```
+
 ## Token Budget
 
 O(files) with small constants. Directory listing, YAML frontmatter parse, regex fingerprinting. No LLM calls. Typical cost: < 100ms for a directory of 100 files.
